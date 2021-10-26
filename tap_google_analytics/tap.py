@@ -75,7 +75,7 @@ class TapGoogleAnalytics(Tap):
         # Optional
         th.Property(
             "reports",
-            th.ObjectType(),
+            th.StringType,
             description="Google Analytics Reports Definition",
         ),
         th.Property(
