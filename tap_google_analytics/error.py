@@ -64,7 +64,8 @@ def error_reason(e):
 
 
 # Silence the discovery_cache errors
-LOGGER = logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
+LOGGER = logging.getLogger("googleapiclient.discovery_cache")
+LOGGER.setLevel(logging.ERROR)
 
 
 def is_fatal_error(error):

@@ -39,7 +39,6 @@ class GoogleAnalyticsStream(Stream):
         self.quota_user = self.config.get("quota_user", None)
         self.end_date = self._get_end_date()
         self.view_id = self.config["view_id"]
-        self.start_date = self.config["start_date"]
 
     def _get_end_date(self):
         end_date = self.config.get("end_date", datetime.utcnow().strftime("%Y-%m-%d"))
@@ -133,9 +132,10 @@ class GoogleAnalyticsStream(Stream):
 
         return report_definition
 
-    def _request_data(self, api_report_def, next_page_token: Optional[Any]):
+    def _request_data(
+            self, api_report_def, state_filter: str, next_page_token: Optional[Any]):
         try:
-            return self._query_api(api_report_def, next_page_token)
+            return self._query_api(api_report_def, state_filter, next_page_token)
         except HttpError as e:
             # Process API errors
             # Use list of errors defined in:
@@ -172,6 +172,17 @@ class GoogleAnalyticsStream(Stream):
                 )
                 raise TapGaUnknownError(e._get_reason())
 
+    def _get_state_filter(self, context: Optional[dict]) -> str:
+        state_bookmark = self.get_starting_replication_key_value(context)
+        if state_bookmark:
+            # state bookmarks need to be reformatted for API requests
+            return datetime.strftime(
+                datetime.strptime(state_bookmark, "%Y%m%d"),
+                "%Y-%m-%d"
+            )
+        else:
+            return self.config["start_date"]
+
     def _request_records(self, context: Optional[dict]) -> Iterable[dict]:
         """Request records from REST endpoint(s), returning response records.
 
@@ -190,9 +201,15 @@ class GoogleAnalyticsStream(Stream):
 
         next_page_token: Any = None
         finished = False
+
+        state_filter = self._get_state_filter(context)
         api_report_def = self._generate_report_definition(self.report)
         while not finished:
-            resp = self._request_data(api_report_def, next_page_token=next_page_token)
+            resp = self._request_data(
+                api_report_def,
+                state_filter=state_filter,
+                next_page_token=next_page_token
+            )
             for row in self._parse_response(resp):
                 yield row
             previous_token = copy.deepcopy(next_page_token)
@@ -272,7 +289,7 @@ class GoogleAnalyticsStream(Stream):
     @backoff.on_exception(
         backoff.expo, (HttpError, socket.timeout), max_tries=9, giveup=is_fatal_error
     )
-    def _query_api(self, report_definition, pageToken=None):
+    def _query_api(self, report_definition, state_filter, pageToken=None):
         """Queries the Analytics Reporting API V4.
 
         Returns:
@@ -283,7 +300,7 @@ class GoogleAnalyticsStream(Stream):
                 {
                     "viewId": self.view_id,
                     "dateRanges": [
-                        {"startDate": self.start_date, "endDate": self.end_date}
+                        {"startDate": state_filter, "endDate": self.end_date}
                     ],
                     "pageSize": "1000",
                     "pageToken": pageToken,
@@ -342,7 +359,7 @@ class GoogleAnalyticsStream(Stream):
         for dimension in self.report["dimensions"]:
             if dimension == "ga:date":
                 date_dimension_included = True
-
+                self.replication_key = "ga_date"
             data_type = self._lookup_data_type(
                 "dimension", dimension, self.dimensions_ref, self.metrics_ref
             )
@@ -372,6 +389,10 @@ class GoogleAnalyticsStream(Stream):
         # If 'ga:date' has not been added as a Dimension, add the
         #  {start_date, end_date} params as keys
         if not date_dimension_included:
+            self.logger.warn(
+                f"Incrmental sync not supported for stream {self.tap_stream_id}, \
+                    'ga.date' is the only supported replication key at this time."
+            )
             primary_keys.append("report_start_date")
             primary_keys.append("report_end_date")
 
