@@ -173,15 +173,14 @@ class GoogleAnalyticsStream(Stream):
                 raise TapGaUnknownError(e._get_reason())
 
     def _get_state_filter(self, context: Optional[dict]) -> str:
-        state_bookmark = self.get_starting_replication_key_value(context)
-        if state_bookmark:
-            # state bookmarks need to be reformatted for API requests
-            return datetime.strftime(
-                datetime.strptime(state_bookmark, "%Y%m%d"),
-                "%Y-%m-%d"
-            )
-        else:
-            return self.config["start_date"]
+        state_bookmark = self.get_starting_replication_key_value(
+            context) or self.config["start_date"]
+        try:
+            parsed = datetime.strptime(state_bookmark, "%Y%m%d")
+        except ValueError:
+            parsed = datetime.strptime(state_bookmark, "%Y-%m-%d")
+        # state bookmarks need to be reformatted for API requests
+        return datetime.strftime(parsed, "%Y-%m-%d")
 
     def _request_records(self, context: Optional[dict]) -> Iterable[dict]:
         """Request records from REST endpoint(s), returning response records.
