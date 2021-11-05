@@ -142,12 +142,12 @@ class TapGoogleAnalytics(Tap):
                 with open(report_def_file) as f:
                     return json.load(f)
             except ValueError:
-                self.self.logger.critical(
+                self.logger.critical(
                     f"The JSON definition in '{report_def_file}' has errors"
                 )
                 sys.exit(1)
         else:
-            self.self.logger.critical(f"'{report_def_file}' file not found")
+            self.logger.critical(f"'{report_def_file}' file not found")
             sys.exit(1)
 
     def _fetch_valid_api_metadata(self):

@@ -173,8 +173,8 @@ class GoogleAnalyticsStream(Stream):
                 raise TapGaUnknownError(e._get_reason())
 
     def _get_state_filter(self, context: Optional[dict]) -> str:
-        state_bookmark = self.get_starting_replication_key_value(
-            context) or self.config["start_date"]
+        state = self.get_context_state(context)
+        state_bookmark = state.get("replication_key_value") or self.config["start_date"]
         try:
             parsed = datetime.strptime(state_bookmark, "%Y%m%d")
         except ValueError:
