@@ -86,7 +86,7 @@ class TapGoogleAnalytics(Tap):
     ).to_dict()
 
     def _initialize_credentials(self):
-        if self.config.get("oauth_credentials", {}).get("access_token"):
+        if self.config.get("oauth_credentials"):
             return GoogleCredentials(
                 access_token=self.config["oauth_credentials"]["access_token"],
                 refresh_token=self.config["oauth_credentials"]["refresh_token"],
@@ -96,15 +96,16 @@ class TapGoogleAnalytics(Tap):
                 token_uri="https://accounts.google.com/o/oauth2/token",
                 user_agent="tap-google-analytics (via singer.io)",
             )
-        else:
-            if self.config.get("key_file_location"):
-                return ServiceAccountCredentials.from_json_keyfile_name(
-                    self.config.get("key_file_location"), SCOPES
-                )
-
+        elif self.config.get("key_file_location"):
+            return ServiceAccountCredentials.from_json_keyfile_name(
+                self.config["key_file_location"], SCOPES
+            )
+        elif self.config.get("client_secrets"):
             return ServiceAccountCredentials.from_json_keyfile_dict(
                 self.config["client_secrets"], SCOPES
             )
+        else:
+            raise Exception("No valid credentials provided.")
 
     def _initialize_analyticsreporting(self):
         """Initializes an Analytics Reporting API V4 service object.
