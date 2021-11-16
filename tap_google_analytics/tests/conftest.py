@@ -4,6 +4,7 @@ import json
 import os
 
 import pytest
+
 from tap_google_analytics.tests.utilities import get_secrets_dict
 
 
