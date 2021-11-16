@@ -304,8 +304,14 @@ Create tests within the `tap_google_analytics/tests` subfolder and
   then run:
 
 ```bash
-poetry run pytest
+poetry run tox
+poetry run tox -e pytest
+poetry run tox -e format
+poetry run tox -e lint
 ```
+
+The tests require an environment variable called `CLIENT_SECRETS` which is either the escaped client secret json file content as a string (e.g. "{\"type\": \"service_account\",\"project_id\":...}") or the base64 encoded version of that same escaped string.
+Base64 is an option primarily for CI to pass secrets in the recommended fashion.
 
 You can also test the `tap-google-analytics` CLI interface directly using `poetry run`:
 
