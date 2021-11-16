@@ -34,6 +34,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
+      CLIENT_SECRETS: ${{ secrets.GA_CLIENT_SECRETS }}
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
     strategy:
       matrix:
