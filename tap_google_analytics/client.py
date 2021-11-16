@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Iterable, List, Optional
 
 import backoff
-import requests
 from googleapiclient.errors import HttpError
 from singer_sdk import typing as th
 from singer_sdk.streams import Stream
@@ -111,7 +110,6 @@ class GoogleAnalyticsStream(Stream):
 
     @staticmethod
     def _generate_report_definition(report_def_raw):
-        """"""
         report_definition = {"metrics": [], "dimensions": []}
 
         for dimension in report_def_raw["dimensions"]:
@@ -133,7 +131,8 @@ class GoogleAnalyticsStream(Stream):
         return report_definition
 
     def _request_data(
-            self, api_report_def, state_filter: str, next_page_token: Optional[Any]):
+        self, api_report_def, state_filter: str, next_page_token: Optional[Any]
+    ) -> dict:
         try:
             return self._query_api(api_report_def, state_filter, next_page_token)
         except HttpError as e:
@@ -190,14 +189,16 @@ class GoogleAnalyticsStream(Stream):
         Args:
             context: Stream partition or context dictionary.
 
-        Yields:
+        Yields
+        ------
             An item for every record in the response.
 
-        Raises:
+        Raises
+        ------
             RuntimeError: If a loop in pagination is detected. That is, when two
                 consecutive pagination tokens are identical.
-        """
 
+        """
         next_page_token: Any = None
         finished = False
 
@@ -207,7 +208,7 @@ class GoogleAnalyticsStream(Stream):
             resp = self._request_data(
                 api_report_def,
                 state_filter=state_filter,
-                next_page_token=next_page_token
+                next_page_token=next_page_token,
             )
             for row in self._parse_response(resp):
                 yield row
@@ -221,17 +222,20 @@ class GoogleAnalyticsStream(Stream):
             # Cycle until get_next_page_token() no longer returns a value
             finished = not next_page_token
 
-    def _get_next_page_token(self, response: requests.Response) -> Any:
+    def _get_next_page_token(self, response: dict) -> Any:
         """Return token identifying next page or None if all records have been read.
 
         Args:
-            response: A raw `requests.Response`_ object.
+        ----
+            response: A dict object.
 
-        Returns:
+        Return:
+        ------
             Reference value to retrieve next page.
 
         .. _requests.Response:
             https://docs.python-requests.org/en/latest/api/#requests.Response
+
         """
         report = response.get("reports", [])
         if report:
@@ -288,11 +292,13 @@ class GoogleAnalyticsStream(Stream):
     @backoff.on_exception(
         backoff.expo, (HttpError, socket.timeout), max_tries=9, giveup=is_fatal_error
     )
-    def _query_api(self, report_definition, state_filter, pageToken=None):
-        """Queries the Analytics Reporting API V4.
+    def _query_api(self, report_definition, state_filter, pageToken=None) -> dict:
+        """Query the Analytics Reporting API V4.
 
-        Returns:
+        Returns
+        -------
             The Analytics Reporting API V4 response.
+
         """
         body = {
             "reportRequests": [
@@ -335,8 +341,10 @@ class GoogleAnalyticsStream(Stream):
         Args:
             context: Stream partition or context dictionary.
 
-        Yields:
+        Yields
+        ------
             One item per (possibly processed) record in the API.
+
         """
         for record in self._request_records(context):
             yield record
@@ -349,7 +357,8 @@ class GoogleAnalyticsStream(Stream):
         This is evaluated prior to any records being retrieved.
         """
         properties: List[th.Property] = []
-        primary_keys: List[th.StringType] = []
+        primary_keys = []
+        # : List[th.StringType] = []
 
         # Track if there is a date set as one of the Dimensions
         date_dimension_included = False
