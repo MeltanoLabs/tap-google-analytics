@@ -1,1 +1,1 @@
-"""TapGoogleAnalytics"""
+"""TapGoogleAnalytics."""

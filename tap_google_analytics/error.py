@@ -1,3 +1,5 @@
+"""GoogleAnalytics error classes."""
+
 import json
 import logging
 import socket

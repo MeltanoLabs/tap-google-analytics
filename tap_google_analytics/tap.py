@@ -3,7 +3,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
@@ -86,7 +86,7 @@ class TapGoogleAnalytics(Tap):
     ).to_dict()
 
     def _initialize_credentials(self):
-        if self.config.get("oauth_credentials", {}).get("access_token"):
+        if self.config.get("oauth_credentials"):
             return GoogleCredentials(
                 access_token=self.config["oauth_credentials"]["access_token"],
                 refresh_token=self.config["oauth_credentials"]["refresh_token"],
@@ -96,34 +96,35 @@ class TapGoogleAnalytics(Tap):
                 token_uri="https://accounts.google.com/o/oauth2/token",
                 user_agent="tap-google-analytics (via singer.io)",
             )
-        else:
-            if self.config.get("key_file_location"):
-                return ServiceAccountCredentials.from_json_keyfile_name(
-                    self.config.get("key_file_location"), SCOPES
-                )
-
+        elif self.config.get("key_file_location"):
+            return ServiceAccountCredentials.from_json_keyfile_name(
+                self.config["key_file_location"], SCOPES
+            )
+        elif self.config.get("client_secrets"):
             return ServiceAccountCredentials.from_json_keyfile_dict(
                 self.config["client_secrets"], SCOPES
             )
+        else:
+            raise Exception("No valid credentials provided.")
 
     def _initialize_analyticsreporting(self):
-        """Initializes an Analytics Reporting API V4 service object.
+        """Initialize an Analytics Reporting API V4 service object.
 
         Returns
-
-        ---
+        -------
             An authorized Analytics Reporting API V4 service object.
+
         """
         return build("analyticsreporting", "v4", credentials=self.credentials)
 
     def _initialize_analytics(self):
-        """Initializes an Analytics Reporting API V3 service object.
+        """Initialize an Analytics Reporting API V3 service object.
 
         Returns
-        ---
+        -------
             An authorized Analytics Reporting API V3 service object.
+
         """
-        # TODO update doc string
         # Initialize a Google Analytics API V3 service object and build the service
         # object.
         # This is needed in order to dynamically fetch the metadata for available
@@ -150,12 +151,11 @@ class TapGoogleAnalytics(Tap):
             self.logger.critical(f"'{report_def_file}' file not found")
             sys.exit(1)
 
-    def _fetch_valid_api_metadata(self):
-        """
-        Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
+    def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
+        """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
 
         Returns
-        ---
+        -------
           A map of (dimensions, metrics) hashes
 
           Each available dimension can be found in dimensions with its data type
@@ -163,6 +163,7 @@ class TapGoogleAnalytics(Tap):
 
           Each available metric can be found in metrics with its data type
             as the value. e.g. metrics['ga:sessions'] == INTEGER
+
         """
         metrics = {}
         dimensions = {}
@@ -316,7 +317,7 @@ class TapGoogleAnalytics(Tap):
         """Return a list of discovered streams."""
         # Generate and return the catalog
         self._custom_initilization()
-        stream_list = []
+        stream_list: List[Stream] = []
 
         for report in self.reports_definition:
             stream = GoogleAnalyticsStream(
