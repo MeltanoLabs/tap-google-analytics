@@ -13,7 +13,7 @@ SAMPLE_CONFIG_SERVICE = {
     "view_id": "188392047",
     "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
-    "key_file_location": f"{os.path.dirname(__file__)}/data/client_secrets.json",
+    "key_file_location": f"{os.path.dirname(__file__)}/test_data/client_secrets.json",
 }
 
 SAMPLE_CONFIG_CLIENT_SECRETS = {
