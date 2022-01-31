@@ -11,7 +11,7 @@ license = "Apache 2.0"
 
 [tool.poetry.dependencies]
 python = "<3.10,>=3.6.2"
-singer-sdk = "^0.4.0"
+singer-sdk = "^0.4.1"
 google-api-python-client = "^2.36.0"
 oauth2client = "4.1.3"
 
