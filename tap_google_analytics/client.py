@@ -83,7 +83,7 @@ class GoogleAnalyticsStream(Stream):
         elif attribute.startswith(("ga:metric", "ga:calcMetric")):
             return "string"
         elif attribute in metrics_ref:
-            return self._parse_other_attrb_type(attribute)
+            return self._parse_other_attrb_type(metrics_ref[attribute])
         else:
             self.logger.critical(f"Unsuported GA type: {type}")
             sys.exit(1)
