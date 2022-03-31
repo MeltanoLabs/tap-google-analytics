@@ -177,7 +177,8 @@ class GoogleAnalyticsStream(Stream):
         try:
             parsed = datetime.strptime(state_bookmark, "%Y%m%d")
         except ValueError:
-            parsed = datetime.strptime(state_bookmark, "%Y-%m-%d")
+            # Take only the first 10 characters since date string can be ISO format
+            parsed = datetime.strptime(state_bookmark[:10], "%Y-%m-%d")
         # state bookmarks need to be reformatted for API requests
         return datetime.strftime(parsed, "%Y-%m-%d")
 
