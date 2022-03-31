@@ -1,5 +1,8 @@
 # `tap-google-analytics`
 
+**Note**: This is a modified variant that fixed the metrics and dimension types ([see PR](https://github.com/MeltanoLabs/tap-google-analytics/pull/24)) and sets `ga:date` type to datetime type.
+
+
 GoogleAnalytics tap is a Singer tap for extracting data from the [Google Analytics Reporting API](https://developers.google.com/analytics/devguides/reporting/core/v4/). It produces JSON-formatted data following the Singer spec.
 
 Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Targets.
