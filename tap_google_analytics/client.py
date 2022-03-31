@@ -264,6 +264,8 @@ class GoogleAnalyticsStream(Stream):
                         value = int(dimension)
                     elif data_type == "number":
                         value = float(dimension)
+                    elif header == "ga:date":
+                        value = datetime.strptime(dimension, "%Y%m%d").isoformat()
                     else:
                         value = dimension
 
@@ -330,6 +332,7 @@ class GoogleAnalyticsStream(Stream):
             "string": th.StringType(),
             "integer": th.IntegerType(),
             "number": th.NumberType(),
+            "datetime": th.DateTimeType(),
         }
         return mapping.get(string_type, th.StringType())
 
@@ -365,12 +368,14 @@ class GoogleAnalyticsStream(Stream):
 
         # Add the dimensions to the schema and as key_properties
         for dimension in self.report["dimensions"]:
-            if dimension == "ga:date":
-                date_dimension_included = True
-                self.replication_key = "ga_date"
             data_type = self._lookup_data_type(
                 "dimension", dimension, self.dimensions_ref, self.metrics_ref
             )
+
+            if dimension == "ga:date":
+                date_dimension_included = True
+                self.replication_key = "ga_date"
+                data_type = "datetime"    
 
             dimension = dimension.replace("ga:", "ga_")
             properties.append(
