@@ -25,6 +25,7 @@ from tap_google_analytics.error import (
 
 class GoogleAnalyticsStream(Stream):
     """Stream class for GoogleAnalytics streams."""
+    replication_key = 'report_start_date'
 
     def __init__(self, *args, **kwargs) -> None:
         """Init GoogleAnalyticsStream."""
@@ -287,8 +288,9 @@ class GoogleAnalyticsStream(Stream):
                         record[metric_name.replace("ga:", "ga_")] = value
 
                 # Also add the [start_date,end_date) used for the report
-                record["report_start_date"] = self.config.get("start_date")
-                record["report_end_date"] = self.end_date
+                report_date = datetime.strptime(self.config.get("start_date"), "%Y-%m-%d").isoformat()
+                record["report_start_date"] = report_date
+                record["report_end_date"] = report_date
 
                 yield record
 
@@ -308,7 +310,7 @@ class GoogleAnalyticsStream(Stream):
                 {
                     "viewId": self.view_id,
                     "dateRanges": [
-                        {"startDate": state_filter, "endDate": self.end_date}
+                        {"startDate": state_filter, "endDate": state_filter}
                     ],
                     "pageSize": "1000",
                     "pageToken": pageToken,
@@ -374,8 +376,6 @@ class GoogleAnalyticsStream(Stream):
             )
 
             if dimension == "ga:date":
-                date_dimension_included = True
-                self.replication_key = "ga_date"
                 data_type = "datetime"    
 
             dimension = dimension.replace("ga:", "ga_")
@@ -394,21 +394,14 @@ class GoogleAnalyticsStream(Stream):
 
         # Also add the {start_date, end_date} params for the report query
         properties.append(
-            th.Property("report_start_date", th.StringType(), required=True)
+            th.Property("report_start_date", th.DateTimeType(), required=True)
         )
         properties.append(
-            th.Property("report_end_date", th.StringType(), required=True)
+            th.Property("report_end_date", th.DateTimeType(), required=True)
         )
 
-        # If 'ga:date' has not been added as a Dimension, add the
-        #  {start_date, end_date} params as keys
-        if not date_dimension_included:
-            self.logger.warn(
-                f"Incrmental sync not supported for stream {self.tap_stream_id}, \
-                    'ga.date' is the only supported replication key at this time."
-            )
-            primary_keys.append("report_start_date")
-            primary_keys.append("report_end_date")
+        primary_keys.append("report_start_date")
+        primary_keys.append("report_end_date")
 
         self.primary_keys = primary_keys
         return th.PropertiesList(*properties).to_dict()
