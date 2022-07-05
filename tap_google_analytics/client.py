@@ -110,7 +110,7 @@ class GoogleAnalyticsStream(Stream):
 
     @staticmethod
     def _generate_report_definition(report_def_raw):
-        report_definition = {"metrics": [], "dimensions": []}
+        report_definition = {"metrics": [], "dimensions": [], "filters": []}
 
         for dimension in report_def_raw["dimensions"]:
             report_definition["dimensions"].append(
@@ -120,6 +120,15 @@ class GoogleAnalyticsStream(Stream):
         for metric in report_def_raw["metrics"]:
             report_definition["metrics"].append(
                 {"expression": metric.replace("ga_", "ga:")}
+            )
+
+        for filter in report_def_raw["filters"]:
+            report_definition["filters"].append(
+                {
+                    "metricName": filter.metric_name,
+                    "operator": filter.operator,
+                    "comparisonValue": filter.comparison_value
+                }
             )
 
         # Add segmentIds to the request if the stream contains them
@@ -311,6 +320,7 @@ class GoogleAnalyticsStream(Stream):
                     "pageToken": pageToken,
                     "metrics": report_definition["metrics"],
                     "dimensions": report_definition["dimensions"],
+                    "filters": report_definition["filters"],
                 }
             ]
         }
