@@ -131,9 +131,9 @@ class GoogleAnalyticsStream(Stream):
             for filter in report_def_raw["dimension_filters"]:
                 report_definition["dimension_filters"].append(
                     {
-                        "dimensionName": filter.dimension_name,
-                        "operator": filter.operator,
-                        "expressions": filter.expressions,
+                        "dimensionName": filter["dimension_name"],
+                        "operator": filter["operator"],
+                        "expressions": filter["expressions"],
                     }
                 )
 
@@ -141,9 +141,9 @@ class GoogleAnalyticsStream(Stream):
             for filter in report_def_raw["metric_filters"]:
                 report_definition["metric_filters"].append(
                     {
-                        "metricName": filter.metric_name,
-                        "operator": filter.operator,
-                        "comparisonValue": filter.comparison_value,
+                        "metricName": filter["metric_name"],
+                        "operator": filter["operator"],
+                        "comparisonValue": filter["comparison_value"],
                     }
                 )
 
