@@ -131,7 +131,7 @@ class GoogleAnalyticsStream(Stream):
             for filter in report_def_raw["dimension_filters"]:
                 report_definition["dimension_filters"].append(
                     {
-                        "dimensionName": filter.metric_name,
+                        "dimensionName": filter.dimension_name,
                         "operator": filter.operator,
                         "expressions": filter.expressions,
                     }
