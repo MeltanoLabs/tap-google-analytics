@@ -110,7 +110,12 @@ class GoogleAnalyticsStream(Stream):
 
     @staticmethod
     def _generate_report_definition(report_def_raw):
-        report_definition = {"metrics": [], "dimensions": []}
+        report_definition = {
+            "metrics": [],
+            "dimensions": [],
+            "dimension_filters": [],
+            "metric_filters": [],
+        }
 
         for dimension in report_def_raw["dimensions"]:
             report_definition["dimensions"].append(
@@ -121,6 +126,26 @@ class GoogleAnalyticsStream(Stream):
             report_definition["metrics"].append(
                 {"expression": metric.replace("ga_", "ga:")}
             )
+
+        if report_def_raw.get("dimension_filters"):
+            for filter in report_def_raw["dimension_filters"]:
+                report_definition["dimension_filters"].append(
+                    {
+                        "dimensionName": filter.metric_name,
+                        "operator": filter.operator,
+                        "expressions": filter.expressions,
+                    }
+                )
+
+        if report_def_raw.get("metric_filters"):
+            for filter in report_def_raw["metric_filters"]:
+                report_definition["metric_filters"].append(
+                    {
+                        "metricName": filter.metric_name,
+                        "operator": filter.operator,
+                        "comparisonValue": filter.comparison_value,
+                    }
+                )
 
         # Add segmentIds to the request if the stream contains them
         if "segments" in report_def_raw:
@@ -314,6 +339,16 @@ class GoogleAnalyticsStream(Stream):
                 }
             ]
         }
+
+        if len(report_definition["dimension_filters"]) > 0:
+            body["reportRequests"][0]["dimensionFilterClauses"] = [
+                {"filters": report_definition["dimension_filters"]}
+            ]
+
+        if len(report_definition["metric_filters"]) > 0:
+            body["reportRequests"][0]["metricFilterClauses"] = [
+                {"filters": report_definition["metric_filters"]}
+            ]
 
         if "segments" in report_definition:
             body["reportRequests"][0]["segments"] = report_definition["segments"]
