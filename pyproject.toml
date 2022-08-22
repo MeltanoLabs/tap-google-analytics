@@ -10,8 +10,8 @@ keywords = [
 license = "Apache 2.0"
 
 [tool.poetry.dependencies]
-python = "<3.10,>=3.6.2"
-singer-sdk = "^0.4.2"
+python = "<3.10,>=3.7.1"
+singer-sdk = "^0.8.0"
 google-api-python-client = "^2.50.0"
 oauth2client = "4.1.3"
 
