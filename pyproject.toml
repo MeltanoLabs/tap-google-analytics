@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tap-google-analytics"
-version = "0.0.4"
+version = "0.0.5"
 description = "`tap-google-analytics` is a Singer tap for GoogleAnalytics, built with the Meltano SDK for Singer Taps."
 authors = ["Pat Nadolny"]
 keywords = [
