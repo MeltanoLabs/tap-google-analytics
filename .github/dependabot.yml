@@ -16,3 +16,14 @@ updates:
       - "pnadolny13"
     labels:
       - "dependencies"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "13:00"
+      day: "monday"
+      timezone: "US/Central"
+    reviewers:
+      - "pnadolny13"
+    labels:
+      - "dependencies"
