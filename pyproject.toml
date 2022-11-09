@@ -21,7 +21,7 @@ tox = "^3.25.0"
 flake8 = "^5.0.4"
 black = "^22.10"
 pydocstyle = "^6.1.1"
-mypy = "^0.982"
+mypy = "^0.990"
 isort = "^5.10.1"
 coverage = "^6.2"
 
