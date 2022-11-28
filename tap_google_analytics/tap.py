@@ -201,16 +201,16 @@ class TapGoogleAnalytics(Tap):
                 metrics = report["metrics"]
             except KeyError:
                 self.logger.critical(
-                    "Report definition is missing one of the required properties (name, \
-                        dimensions, metrics)"
+                    "Report definition is missing one of the required properties \
+                    (name, dimensions, metrics)"
                 )
                 sys.exit(1)
 
             # Check that not too many metrics && dimensions have been requested
             if len(metrics) == 0:
                 self.logger.critical(
-                    f"'{name}' has no metrics defined. GA reports must specify at least \
-                        one metric."
+                    f"'{name}' has no metrics defined. GA reports must specify at \
+                     least one metric."
                 )
                 sys.exit(1)
             elif len(metrics) > 10:
