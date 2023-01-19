@@ -403,11 +403,16 @@ class GoogleAnalyticsStream(Stream):
         #  {start_date, end_date} params as keys
         if not date_dimension_included:
             self.logger.warn(
-                f"Incrmental sync not supported for stream {self.tap_stream_id}, \
+                f"Incremental sync not supported for stream {self.tap_stream_id}, \
                     'ga.date' is the only supported replication key at this time."
             )
             primary_keys.append("report_start_date")
             primary_keys.append("report_end_date")
+
+        if self.include_view_id_in_output:
+            properties.append(
+                th.Property("include_view_id_in_output", th.BooleanType(), required=False, default=False)
+            )
 
         self.primary_keys = primary_keys
         return th.PropertiesList(*properties).to_dict()
