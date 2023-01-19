@@ -411,7 +411,7 @@ class GoogleAnalyticsStream(Stream):
 
         if self.include_view_id_in_output:
             properties.append(
-                th.Property("include_view_id_in_output", th.BooleanType(), required=False, default=False)
+                th.Property("_view_id", th.StringType(), required=False)
             )
 
         self.primary_keys = primary_keys
