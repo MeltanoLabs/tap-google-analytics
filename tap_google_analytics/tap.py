@@ -83,6 +83,13 @@ class TapGoogleAnalytics(Tap):
             th.StringType,
             description="The last record date to sync",
         ),
+        th.Property(
+            "include_view_id_in_output",
+            th.BooleanType,
+            description="Include view_id property in output to allow disambiguation of multiple Google Analytics properties",
+            required=False,
+            default=False,
+        ),
     ).to_dict()
 
     def _initialize_credentials(self):

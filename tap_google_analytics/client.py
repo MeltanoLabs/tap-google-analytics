@@ -38,6 +38,7 @@ class GoogleAnalyticsStream(Stream):
         self.quota_user = self.config.get("quota_user", None)
         self.end_date = self._get_end_date()
         self.view_id = self.config["view_id"]
+        self.include_view_id_in_output: bool = self.config.get("include_view_id_in_output", False)
 
     def _get_end_date(self):
         end_date = self.config.get("end_date", datetime.utcnow().strftime("%Y-%m-%d"))
@@ -286,6 +287,10 @@ class GoogleAnalyticsStream(Stream):
                 # Also add the [start_date,end_date) used for the report
                 record["report_start_date"] = self.config.get("start_date")
                 record["report_end_date"] = self.end_date
+
+                # if configured, include view_id to allow disambiguating multiple Google Analytics views
+                if self.include_view_id_in_output:
+                    record["_view_id"] = self.view_id
 
                 yield record
 
