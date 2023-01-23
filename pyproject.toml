@@ -22,7 +22,7 @@ flake8 = "^5.0.4"
 black = "^22.10"
 pydocstyle = "^6.1.1"
 mypy = "^0.991"
-isort = "^5.10.1"
+isort = "^5.11.4"
 coverage = "^6.2"
 
 [tool.isort]
