@@ -7,7 +7,8 @@ import pytest
 from singer_sdk.testing import get_tap_test_class
 
 from tap_google_analytics.tap import TapGoogleAnalytics
-from tap_google_analytics.tests.utilities import get_secrets_dict
+
+from .utilities import get_secrets_dict
 
 SAMPLE_CONFIG_SERVICE = {
     "view_id": "188392047",
