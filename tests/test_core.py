@@ -3,11 +3,15 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from singer_sdk.testing import get_tap_test_class
+from singer_sdk.testing import SuiteConfig, get_tap_test_class
 
 from tap_google_analytics.tap import TapGoogleAnalytics
 
 from .utilities import create_secrets_file, get_secrets_dict
+
+# suite config
+suite_config = SuiteConfig(ignore_no_records_for_streams=["pages"])
+
 
 # Run standard built-in tap tests from the SDK with SAMPLE_CONFIG_CLIENT_SECRETS
 SAMPLE_CONFIG_CLIENT_SECRETS = {
@@ -19,7 +23,9 @@ SAMPLE_CONFIG_CLIENT_SECRETS = {
 
 
 TestTapGoogleAnalyticsClientSecrets = get_tap_test_class(
-    tap_class=TapGoogleAnalytics, config=SAMPLE_CONFIG_CLIENT_SECRETS
+    tap_class=TapGoogleAnalytics,
+    config=SAMPLE_CONFIG_CLIENT_SECRETS,
+    suite_config=suite_config,
 )
 
 
@@ -35,7 +41,9 @@ with create_secrets_file() as secrets_file_path:
     }
 
     TapGoogleAnalyticsService = get_tap_test_class(
-        tap_class=TapGoogleAnalytics, config=SAMPLE_CONFIG_SERVICE
+        tap_class=TapGoogleAnalytics,
+        config=SAMPLE_CONFIG_SERVICE,
+        suite_config=suite_config,
     )
 
     class TestTapGoogleAnalyticsService(TapGoogleAnalyticsService):
