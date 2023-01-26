@@ -7,6 +7,8 @@ import pytest
 
 from tap_google_analytics.tests.utilities import get_secrets_dict
 
+pytest_plugins = ("singer_sdk.testing.pytest_plugin",)
+
 
 @pytest.fixture(scope="module")
 def config():
