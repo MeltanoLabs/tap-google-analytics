@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from singer_sdk.testing import get_tap_test_class
 
 from tap_google_analytics.tap import TapGoogleAnalytics
@@ -33,6 +34,12 @@ with create_secrets_file() as secrets_file_path:
         "key_file_location": secrets_file_path,
     }
 
-    TestTapGoogleAnalyticsService = get_tap_test_class(
+    TapGoogleAnalyticsService = get_tap_test_class(
         tap_class=TapGoogleAnalytics, config=SAMPLE_CONFIG_SERVICE
     )
+
+    class TestTapGoogleAnalyticsService(TapGoogleAnalyticsService):
+        @pytest.fixture(scope="class")
+        def resource(self):
+            with create_secrets_file() as secrets_file_path:
+                yield secrets_file_path
