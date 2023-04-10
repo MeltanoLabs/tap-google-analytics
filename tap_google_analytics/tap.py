@@ -25,7 +25,11 @@ class TapGoogleAnalytics(Tap):
         th.Property(
             "start_date",
             th.DateTimeType,
-            description="The earliest record date to sync",
+            description=(
+                "This property determines how much historical data will be extracted."
+                "Please be aware that the larger the time period and amount of data, "
+                "the longer the initial extraction can be expected to take."
+            ),
             required=True,
         ),
         th.Property(
@@ -52,22 +56,38 @@ class TapGoogleAnalytics(Tap):
                 th.Property(
                     "access_token",
                     th.StringType,
-                    description="Google Analytics Access Token",
+                    description=(
+                        "Google Analytics Access Token. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
                 th.Property(
                     "refresh_token",
                     th.StringType,
-                    description="Google Analytics Refresh Token",
+                    description=(
+                        "Google Analytics Refresh Token. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
                 th.Property(
                     "client_id",
                     th.StringType,
-                    description="Google Analytics Client ID",
+                    description=(
+                        "Google Analytics Client ID. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
                 th.Property(
                     "client_secret",
                     th.StringType,
-                    description="Google Analytics Client Secret",
+                    description=(
+                        "Google Analytics Client Secret. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
             ),
             description="Google Analytics OAuth Credentials",
@@ -81,7 +101,7 @@ class TapGoogleAnalytics(Tap):
         th.Property(
             "end_date",
             th.StringType,
-            description="The last record date to sync",
+            description="Date up to when historical data will be extracted.",
         ),
     ).to_dict()
 
