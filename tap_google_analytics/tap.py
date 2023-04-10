@@ -56,22 +56,38 @@ class TapGoogleAnalytics(Tap):
                 th.Property(
                     "access_token",
                     th.StringType,
-                    description="Google Analytics Access Token. See https://developers.google.com/analytics/devguides/reporting/core/v4/authorization#OAuth2Authorizing.",
+                    description=(
+                        "Google Analytics Access Token. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
                 th.Property(
                     "refresh_token",
                     th.StringType,
-                    description="Google Analytics Refresh Token. See https://developers.google.com/analytics/devguides/reporting/core/v4/authorization#OAuth2Authorizing.",
+                    description=(
+                        "Google Analytics Refresh Token. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
                 th.Property(
                     "client_id",
                     th.StringType,
-                    description="Google Analytics Client ID. See https://developers.google.com/analytics/devguides/reporting/core/v4/authorization#OAuth2Authorizing.",
+                    description=(
+                        "Google Analytics Client ID. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
                 th.Property(
                     "client_secret",
                     th.StringType,
-                    description="Google Analytics Client Secret. See https://developers.google.com/analytics/devguides/reporting/core/v4/authorization#OAuth2Authorizing.",
+                    description=(
+                        "Google Analytics Client Secret. See "
+                        "https://developers.google.com/analytics/devguides/reporting/"
+                        "core/v4/authorization#OAuth2Authorizing."
+                    ),
                 ),
             ),
             description="Google Analytics OAuth Credentials",
