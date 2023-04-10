@@ -222,7 +222,7 @@ class GoogleAnalyticsStream(Stream):
             # Cycle until get_next_page_token() no longer returns a value
             finished = not next_page_token
 
-    def _get_next_page_token(self, response: dict) -> Any:
+    def _get_next_page_token(self, response: dict) -> Any: # noqa: D417
         """Return token identifying next page or None if all records have been read.
 
         Args:
