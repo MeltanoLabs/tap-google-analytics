@@ -24,7 +24,7 @@ SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
 LOGGER = logging.getLogger(__name__)
 
 class TapGoogleAnalytics(Tap):
-    """GoogleAnalytics tap class."""
+    """Singer tap for extracting data from the Google Analytics Data API (GA4)"""
 
     name = "tap-google-analytics"
 

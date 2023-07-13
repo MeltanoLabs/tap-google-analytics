@@ -1,9 +1,8 @@
-# `tap-google-analytics-v4` Meltano Plugin [Hotglue Variant]
+# `tap-google-analytics`
 
-`tap-google-analytics-v4` tap is a Singer tap for extracting data from the [Google Analytics Data API (GA4)](https://developers.google.com/analytics/devguides/reporting/data/v1).
-It produces JSON-formatted data following the Singer spec. This tap is produced by [Hotglue](https://gitlab.com/hotglue), with the addition of Google Sevice Account autorization provided by [@connorflyn](https://github.com/connorflyn).
+Singer tap for extracting data from the Google Analytics Data API (GA4)
 
-Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Targets.
+Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 
 ## Capabilities
 
@@ -12,19 +11,25 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 * `discover`
 * `about`
 * `stream-maps`
+* `schema-flattening`
 
 ## Settings
 
-| Setting          | Required | Default | Description |
-|:-----------------|:--------:|:-------:|:------------|
-| start_date       | True     | None    | The earliest record date to sync |
-| property_id      | True     | None    | Google Analytics Property ID |
-| key_file_location| False    | None    | File Path to Google Analytics Client Secrets (Service Account) |
-| oauth_credentials| False    | None    | Google Analytics OAuth Credentials |
-| reports          | False    | None    | Google Analytics Reports Definition |
-| end_date         | False    | None    | The last record date to sync |
+| Setting             | Required | Default | Description |
+|:--------------------|:--------:|:-------:|:------------|
+| start_date          | True     | None    | The earliest record date to sync |
+| property_id         | True     | None    | Google Analytics Property ID |
+| client_secrets      | False    | None    | Google Analytics Client Secrets Dictionary |
+| key_file_location   | False    | None    | File Path to Google Analytics Client Secrets |
+| oauth_credentials   | False    | None    | Google Analytics OAuth Credentials |
+| reports             | False    | None    | Google Analytics Reports Definition |
+| end_date            | False    | None    | The last record date to sync |
+| stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
+| stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
+| flattening_enabled  | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
+| flattening_max_depth| False    | None    | The max depth to flatten schemas. |
 
-A full list of supported settings and capabilities is available by running: `tap-google-analytics-v4 --about`
+A full list of supported settings and capabilities is available by running: `tap-google-analytics --about`
 
 ## Installation
 
@@ -346,3 +351,12 @@ meltano elt tap-google-analytics-v4 target-jsonl
 
 See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to 
 develop your own taps and targets.
+
+### Repository History and Contributors
+
+- https://gitlab.com/meltano/tap-google-analytics
+- https://github.com/MeltanoLabs/tap-google-analytics - Migrated to MeltanoLabs and ported to the Meltano SDK
+- https://gitlab.com/hotglue/tap-google-analytics - Hard forked to [hotglue's](https://hotglue.com/) GitLab repo to convert it from Universal Analytics to GA4
+- https://github.com/connorflyn/tap-google-analytics-v4 - Hard forked back to GitHub by [@connorflyn](https://github.com/connorflyn) to add Google Service Account authorization
+- https://github.com/z3z1ma/tap-google-analytics-v4 and https://github.com/radbrt/tap-google-analytics-v4 - Forks to address bugs
+- https://github.com/MeltanoLabs/tap-ga4 - Fork off of https://github.com/radbrt/tap-google-analytics-v4 which was the tip of the fork tree with all the most recent changes and bug fixes
