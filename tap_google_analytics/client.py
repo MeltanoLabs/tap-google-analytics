@@ -5,19 +5,15 @@ import socket
 import sys
 from datetime import datetime, timedelta
 from typing import Any, Dict, Iterable, List, Optional
-from pendulum import parse
 
 import backoff
+from google.analytics.data_v1beta.types import DateRange, Metric, RunReportRequest
+from pendulum import parse
 from singer_sdk import typing as th
 from singer_sdk.streams import Stream
 
-from tap_google_analytics.error import (
-    is_fatal_error,
-)
+from tap_google_analytics.error import is_fatal_error
 
-from google.analytics.data_v1beta.types import DateRange
-from google.analytics.data_v1beta.types import Metric
-from google.analytics.data_v1beta.types import RunReportRequest
 
 class GoogleAnalyticsStream(Stream):
     """Stream class for GoogleAnalytics streams."""
@@ -96,9 +92,7 @@ class GoogleAnalyticsStream(Stream):
         report_definition = {"metrics": [], "dimensions": []}
 
         for dimension in report_def_raw["dimensions"]:
-            report_definition["dimensions"].append(
-                {"name": dimension}
-            )
+            report_definition["dimensions"].append({"name": dimension})
 
         for metric in report_def_raw["metrics"]:
             report_definition["metrics"].append(Metric(name=metric))
@@ -115,7 +109,6 @@ class GoogleAnalyticsStream(Stream):
         self, api_report_def, state_filter: str, next_page_token: Optional[Any]
     ) -> dict:
         return self._query_api(api_report_def, state_filter, next_page_token)
-
 
     def _get_state_filter(self, context: Optional[dict]) -> str:
         state = self.get_context_state(context)
@@ -159,7 +152,9 @@ class GoogleAnalyticsStream(Stream):
             for row in self._parse_response(resp):
                 yield row
             previous_token = copy.deepcopy(next_page_token)
-            next_page_token = self._get_next_page_token(response=resp, previous_token=previous_token)
+            next_page_token = self._get_next_page_token(
+                response=resp, previous_token=previous_token
+            )
             if next_page_token and next_page_token == previous_token:
                 raise RuntimeError(
                     f"Loop detected in pagination. "
@@ -186,7 +181,7 @@ class GoogleAnalyticsStream(Stream):
         previous_token = previous_token or 0
         next_token = previous_token + 1
         total_rows = response.row_count
-        if total_rows>=next_token*self.page_size:
+        if total_rows >= next_token * self.page_size:
             return next_token
         return None
 
@@ -235,9 +230,7 @@ class GoogleAnalyticsStream(Stream):
 
                 yield record
 
-    @backoff.on_exception(
-        backoff.expo, (Exception), max_tries=5, giveup=is_fatal_error
-    )
+    @backoff.on_exception(backoff.expo, (Exception), max_tries=5, giveup=is_fatal_error)
     def _query_api(self, report_definition, state_filter, pageToken=None) -> dict:
         """Query the Analytics Reporting API V4.
 
@@ -252,7 +245,7 @@ class GoogleAnalyticsStream(Stream):
             metrics=report_definition["metrics"],
             date_ranges=[DateRange(start_date=state_filter, end_date=self.end_date)],
             limit=self.page_size,
-            offset=(pageToken or 0)*self.page_size
+            offset=(pageToken or 0) * self.page_size,
         )
 
         return self.analytics.run_report(request)
