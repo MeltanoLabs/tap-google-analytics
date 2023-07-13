@@ -75,7 +75,7 @@ def is_fatal_error(error):
     if isinstance(error, socket.timeout):
         return False
 
-    status = error.resp.status if getattr(error, "resp") is not None else None
+    status = error.code if getattr(error, "message") is not None else None
     if status in [500, 503]:
         return False
 

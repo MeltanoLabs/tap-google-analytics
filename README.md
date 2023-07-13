@@ -1,6 +1,7 @@
-# `tap-google-analytics`
+# `tap-google-analytics-v4` Meltano Plugin [Hotglue Variant]
 
-GoogleAnalytics tap is a Singer tap for extracting data from the [Google Analytics Reporting API](https://developers.google.com/analytics/devguides/reporting/core/v4/). It produces JSON-formatted data following the Singer spec.
+`tap-google-analytics-v4` tap is a Singer tap for extracting data from the [Google Analytics Data API (GA4)](https://developers.google.com/analytics/devguides/reporting/data/v1).
+It produces JSON-formatted data following the Singer spec. This tap is produced by [Hotglue](https://gitlab.com/hotglue), with the addition of Google Sevice Account autorization provided by [@connorflyn](https://github.com/connorflyn).
 
 Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Targets.
 
@@ -17,20 +18,16 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 | Setting          | Required | Default | Description |
 |:-----------------|:--------:|:-------:|:------------|
 | start_date       | True     | None    | The earliest record date to sync |
-| view_id          | True     | None    | Google Analytics View ID |
-| client_secrets   | False    | None    | Google Analytics Client Secrets Dictionary |
-| key_file_location| False    | None    | File Path to Google Analytics Client Secrets |
+| property_id      | True     | None    | Google Analytics Property ID |
+| key_file_location| False    | None    | File Path to Google Analytics Client Secrets (Service Account) |
 | oauth_credentials| False    | None    | Google Analytics OAuth Credentials |
 | reports          | False    | None    | Google Analytics Reports Definition |
 | end_date         | False    | None    | The last record date to sync |
 
-A full list of supported settings and capabilities is available by running: `tap-google-analytics --about`
+A full list of supported settings and capabilities is available by running: `tap-google-analytics-v4 --about`
 
 ## Installation
 
-```bash
-pipx install tap-google-analytics
-```
 
 ## Source Authentication and Authorization
 
@@ -94,14 +91,13 @@ A sample config for `tap-google-analytics` might look like this:
 One of the credentials keys must exist:
 
 - key_file_location
-- client_secrets
 - oauth_credentials
 
 
 **sample_config.json**
 ```js
 {
-  "view_id": "123456789",
+  "property_id": "123456789",
   "reports": "reports.json",
   "start_date": "2019-05-01T00:00:00Z",
   "end_date": "2019-06-01T00:00:00Z",
@@ -241,9 +237,9 @@ You can easily run `tap-google-analytics` by itself or in a pipeline using [Melt
 ### Executing the Tap Directly
 
 ```bash
-tap-google-analytics --version
-tap-google-analytics --help
-tap-google-analytics --config CONFIG --discover > ./catalog.json
+tap-google-analytics-v4 --version
+tap-google-analytics-v4 --help
+tap-google-analytics-v4 --config CONFIG --discover > ./catalog.json
 ```
 
 ## Developer Resources
@@ -316,7 +312,7 @@ Base64 is an option primarily for CI to pass secrets in the recommended fashion.
 You can also test the `tap-google-analytics` CLI interface directly using `poetry run`:
 
 ```bash
-poetry run tap-google-analytics --help
+poetry run tap-google-analytics-v4 --help
 ```
 
 ### Testing with [Meltano](https://www.meltano.com)
@@ -333,7 +329,7 @@ Next, install Meltano (if you haven't already) and any needed plugins:
 # Install meltano
 pipx install meltano
 # Initialize meltano within this directory
-cd tap-google-analytics
+cd tap-google-analytics-v4
 meltano install
 ```
 
@@ -341,9 +337,9 @@ Now you can test and orchestrate using Meltano:
 
 ```bash
 # Test invocation:
-meltano invoke tap-google-analytics --version
+meltano invoke tap-google-analytics-v4 --version
 # OR run a test `elt` pipeline:
-meltano elt tap-google-analytics target-jsonl
+meltano elt tap-google-analytics-v4 target-jsonl
 ```
 
 ### SDK Dev Guide
