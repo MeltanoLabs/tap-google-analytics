@@ -163,18 +163,15 @@ class GoogleAnalyticsStream(Stream):
             finished = not next_page_token
 
     def _get_next_page_token(self, response: dict, previous_token) -> Any:
-        """Return token identifying next page or None if all records have been read.
+        """Get the next page token from a response.
 
         Args:
-        ----
-            response: A dict object.
+            response: The response from the API.
+            previous_token: The previous page token.
 
-        Return:
-        ------
-            Reference value to retrieve next page.
-
-        .. _requests.Response:
-            https://docs.python-requests.org/en/latest/api/#requests.Response
+        Returns
+        -------
+            The next page token, or None if there are no more pages.
 
         """
         previous_token = previous_token or 0

@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TapGoogleAnalytics(Tap):
-    """Singer tap for extracting data from the Google Analytics Data API (GA4)"""
+    """Singer tap for extracting data from the Google Analytics Data API (GA4)."""
 
     name = "tap-google-analytics"
 
@@ -116,14 +116,13 @@ class TapGoogleAnalytics(Tap):
             raise Exception("No valid credentials provided.")
 
     def _initialize_analytics(self):
-        """Initialize an Analytics Reporting API V3 service object.
+        """Initialize an Analytics Reporting API V4 service object.
 
         Returns
         -------
-            An authorized Analytics Reporting API V3 service object.
+          An authorized Analytics Reporting API V4 service object.
 
         """
-
         return BetaAnalyticsDataClient(credentials=self.credentials)
 
     def _get_reports_config(self):
