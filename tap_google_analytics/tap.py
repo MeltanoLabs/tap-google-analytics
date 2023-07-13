@@ -102,8 +102,13 @@ class TapGoogleAnalytics(Tap):
                 token_uri="https://accounts.google.com/o/oauth2/token"
             )
         elif self.config.get("key_file_location"):
+            with open(self.config["key_file_location"]) as f:
+                return service_account.Credentials.from_service_account_info(
+                    json.load(f)
+                )
+        elif self.config.get("client_secrets"):
             return service_account.Credentials.from_service_account_info(
-                json.load(open(self.config["key_file_location"]))
+                self.config["client_secrets"]
             )
         else:
             raise Exception("No valid credentials provided.")
@@ -147,10 +152,10 @@ class TapGoogleAnalytics(Tap):
           A map of (dimensions, metrics) hashes
 
           Each available dimension can be found in dimensions with its data type
-            as the value. e.g. dimensions['ga:userType'] == STRING
+            as the value. e.g. dimensions['userType'] == STRING
 
           Each available metric can be found in metrics with its data type
-            as the value. e.g. metrics['ga:sessions'] == INTEGER
+            as the value. e.g. metrics['sessions'] == INTEGER
 
         """
         metrics = {}
@@ -230,7 +235,7 @@ class TapGoogleAnalytics(Tap):
     def _validate_metrics(self, metrics):
         # check that all the metrics are proper Google Analytics metrics
         for metric in metrics:
-            if metric.startswith("ga:goal") and metric.endswith(
+            if metric.startswith("goal") and metric.endswith(
                 (
                     "Starts",
                     "Completions",
@@ -240,29 +245,27 @@ class TapGoogleAnalytics(Tap):
                     "AbandonRate",
                 )
             ):
-                # Custom Google Analytics Metrics {ga:goalXXStarts, ga:goalXXValue, ...}
+                # Custom Google Analytics Metrics {goalXXStarts, goalXXValue, ...}
                 continue
-            elif metric.startswith("ga:searchGoal") and metric.endswith(
+            elif metric.startswith("searchGoal") and metric.endswith(
                 "ConversionRate"
             ):
-                # Custom Google Analytics Metrics ga:searchGoalXXConversionRate
+                # Custom Google Analytics Metrics searchGoalXXConversionRate
                 continue
             elif (
-                not metric.startswith(("ga:metric", "ga:calcMetric"))
+                not metric.startswith(("metric", "calcMetric"))
                 and metric not in self.metrics_ref
             ):
                 self.logger.critical(
                     f"'{metric}' is not a valid Google Analytics metric"
                 )
                 self.logger.info(
-                    "For details see https://developers.google.com/analytics/devguides/\
-                        reporting/core/dimsmets"
+                    "For details see https://ga-dev-tools.google/ga4/\
+                        dimensions-metrics-explorer/"
                 )
                 sys.exit(1)
 
     def _custom_initilization(self):
-        # validate config variations
-        self.quota_user = self.config.get("quota_user", None)
         # init GA client
         self.credentials = self._initialize_credentials()
         self.analytics = self._initialize_analytics()

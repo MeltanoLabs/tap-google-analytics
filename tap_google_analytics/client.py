@@ -31,7 +31,6 @@ class GoogleAnalyticsStream(Stream):
 
         super().__init__(*args, **kwargs)
 
-        self.quota_user = self.config.get("quota_user", None)
         self.end_date = self._get_end_date()
         self.property_id = self.config["property_id"]
         self.page_size = 100000

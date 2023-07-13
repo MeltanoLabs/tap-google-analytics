@@ -97,6 +97,7 @@ One of the credentials keys must exist:
 
 - key_file_location
 - oauth_credentials
+- client_secrets
 
 
 **sample_config.json**
@@ -124,7 +125,7 @@ You can easily run `tap-google-analytics` by itself or in a pipeline using [Melt
 
 As the Google Analytics Reports are defined dynamically and there are practically infinite combinations of dimensions and metrics a user can ask for, the entities and their schema (i.e. the Catalog for this tap) are not static. So, this tap behaves more or less similarly to a tap extracting data from a Data Source (e.g. a Postgres Database).
 
-The difference of `tap-google-analytics` to a database tap is that the Catalog (available entities/streams and their schema) is dynamic but not available to be discovered at run time by connecting to the Data Source. It must be dynamically generated based on the reports the user wants to generate by connecting to the Google Analytics Reporting API.
+The difference of `tap-google-analytics` to a database tap is that the Catalog (available entities/streams and their schema) is dynamic but not available to be discovered at run time by connecting to the Data Source. It must be dynamically generated based on the reports the user wants to generate by connecting to the Google Analytics Data API.
 
 To that end, this tap uses an additional JSON file for the definition of the reports that the user wants to be generated. You can check, as an example, the JSON file used as a default in [tap_google_analytics/defaults/default_report_definition.json](https://github.com/MeltanoLabs/tap-google-analytics/blob/main/tap_google_analytics/defaults/default_report_definition.json). Those report definitions could be part of the `config.json`, but we prefer to keep `config.json` small and clean and provide the definitions by using an additional file.
 
@@ -135,14 +136,14 @@ It then behaves as any Singer compatible tap and uses that Catalog (or any Catal
 When no report definitions are provided by the user, `tap-google-analytics` generates a default Catalog with some common reports provided:
 - **website_overview**: Most common metrics (users, new users, sessions, avg session duration, page views, bounce rate, etc) per day
 - **traffic_sources**: Most common metrics per day, source, medium and social network
-- **pages**: Most common page metrics (page views, unique page views, avg time on page, etc) per day, host name and page path
 - **locations**: Most common metrics per day and various location dimensions (continent, country, region, city, etc)
-- **monthly_active_users**: Monthly active users (past 30 days) per day
+- **four_weekly_active_users**: Monthly active users (past 30 days) per day
 - **weekly_active_users**: Weekly active users (past 7 days) per day
 - **daily_active_users**: Daily active users (past 1 day) per day
 - **devices**: Most common metrics per day, device category, operating system and browser
+- **transactions**: Most common metrics per day, transactions, revenue per user, purchase revenue, and total revenue.
 
-This tap only allows incremental syncs using STATE records if the `ga:date` dimension is included in the report. Otherwise it does not save state and does a full load each time. Without the `ga:date` dimension this can be mitigated by allowing for chunked runs using [start_date, end_date).
+This tap only allows incremental syncs using STATE records if the `date` dimension is included in the report. Otherwise it does not save state and does a full load each time. Without the `date` dimension this can be mitigated by allowing for chunked runs using [start_date, end_date).
 
 If not provided and the tap runs without a `--catalog` also provided, use [tap_google_analytics/defaults/default_report_definition.json](tap_google_analytics/defaults/default_report_definition.json) as the default definition.
 
@@ -180,25 +181,25 @@ For example, if you want to extract user stats per day in a users_per_day stream
   { "name" : "users_per_day",
     "dimensions" :
     [
-      "ga:date"
+      "date"
     ],
     "metrics" :
     [
-      "ga:users",
-      "ga:newUsers"
+      "users",
+      "newUsers"
     ]
   },
   { "name" : "sessions_per_country_day",
     "dimensions" :
     [
-      "ga:date",
-      "ga:country"
+      "date",
+      "country"
     ],
     "metrics" :
     [
-      "ga:sessions",
-      "ga:sessionsPerUser",
-      "ga:avgSessionDuration"
+      "sessions",
+      "sessionsPerUser",
+      "avgSessionDuration"
     ]
   }
 ]
@@ -208,21 +209,21 @@ You can check [tap-google-analytics/defaults/default_report_definition.json](tap
 
 ##### Segments
 
-If you want to use the `ga:segment` dimension, you must specify the segment IDs in your reports.json stream / report config:
+If you want to use the `segment` dimension, you must specify the segment IDs in your reports.json stream / report config:
 
 ```
 [
   {
     "name": "acquisition",
     "dimensions": [
-      "ga:date",
-      "ga:segment",
-      "ga:channelGrouping"
+      "date",
+      "segment",
+      "channelGrouping"
     ],
     "metrics": [
-      "ga:users",
-      "ga:newUsers",
-      "ga:sessions"
+      "users",
+      "newUsers",
+      "sessions"
     ],
     "segments": [
       "gaid::-1",
@@ -242,9 +243,9 @@ You can easily run `tap-google-analytics` by itself or in a pipeline using [Melt
 ### Executing the Tap Directly
 
 ```bash
-tap-google-analytics-v4 --version
-tap-google-analytics-v4 --help
-tap-google-analytics-v4 --config CONFIG --discover > ./catalog.json
+tap-google-analytics --version
+tap-google-analytics --help
+tap-google-analytics --config CONFIG --discover > ./catalog.json
 ```
 
 ## Developer Resources
@@ -252,19 +253,16 @@ tap-google-analytics-v4 --config CONFIG --discover > ./catalog.json
 ### Implementation details
 
 This tap makes some explicit decisions:
-- All Google Analytics Metrics and Dimensions used are preserved with their name changed to `ga_XXX` from `ga:XXX`
-
-  e.g. `ga:date` --> `ga_date`
 
 - All dimensions are part of the stream's key definition (`table-key-properties`).
 
 - The {start_date, end_date} parameters for the report query are also added to the schema as {report_start_date, report_end_date}.
 
-  This is important for defining the date range the records are for, especially when 'ga:date' is not part of the requested Dimensions.
+  This is important for defining the date range the records are for, especially when 'date' is not part of the requested Dimensions.
 
-- If 'ga:date' has not been added as one of the Dimensions, then the {report_start_date, report_end_date} attributes are also added as keys.
+- If 'date' has not been added as one of the Dimensions, then the {report_start_date, report_end_date} attributes are also added as keys.
 
-  For example, if a user requests to see user stats by device or by source, the {start_date, end_date} can be used as part of the key uniquelly identifying the generated stats.
+  For example, if a user requests to see user stats by device or by source, the {start_date, end_date} can be used as part of the key uniquely identifying the generated stats.
 
   That way we can properly identify rows with no date dimension included and also update those rows over overlapping runs of the tap.
 
@@ -286,11 +284,11 @@ This tap makes some explicit decisions:
 
 Tap shortcomings (contributions are more than welcome):
 
-- This tap only allows incremental syncs using STATE records if the `ga:date` dimension is included in the report. Incremental syncs should be supported using other combinations of Time Dimensions if provided.
+- This tap only allows incremental syncs using STATE records if the `date` dimension is included in the report. Incremental syncs should be supported using other combinations of Time Dimensions if provided.
 
-- We may be checking for valid Google Analytics Metrics and Dimensions and report back to the user with errors, but we are not checking for valid combinations. Not all dimensions and metrics can be queried together and we should add a black list of metrics and dimensions that can not be used with specific dimensions (e.g. ga:impressions with ga:browser) or with other metrics (e.g. ga:XXdayUsers with other ga:XXdayUsers or ga:users).
+- We may be checking for valid Google Analytics Metrics and Dimensions and report back to the user with errors, but we are not checking for valid combinations. Not all dimensions and metrics can be queried together and we should add a black list of metrics and dimensions that can not be used with specific dimensions (e.g. impressions with browser) or with other metrics (e.g. XXdayUsers with other XXdayUsers or users).
 
-  The [Available Metrics/Dimensions and combos page](https://developers.google.com/analytics/devguides/reporting/core/dimsmets) provides a way to discover those restrictions.
+  The [Available Metrics/Dimensions and combos page](https://ga-dev-tools.google/ga4/dimensions-metrics-explorer/) provides a way to discover those restrictions.
 
 ### Initialize your Development Environment
 
@@ -317,7 +315,7 @@ Base64 is an option primarily for CI to pass secrets in the recommended fashion.
 You can also test the `tap-google-analytics` CLI interface directly using `poetry run`:
 
 ```bash
-poetry run tap-google-analytics-v4 --help
+poetry run tap-google-analytics --help
 ```
 
 ### Testing with [Meltano](https://www.meltano.com)
@@ -334,7 +332,7 @@ Next, install Meltano (if you haven't already) and any needed plugins:
 # Install meltano
 pipx install meltano
 # Initialize meltano within this directory
-cd tap-google-analytics-v4
+cd tap-google-analytics
 meltano install
 ```
 
@@ -342,9 +340,9 @@ Now you can test and orchestrate using Meltano:
 
 ```bash
 # Test invocation:
-meltano invoke tap-google-analytics-v4 --version
+meltano invoke tap-google-analytics --version
 # OR run a test `elt` pipeline:
-meltano elt tap-google-analytics-v4 target-jsonl
+meltano elt tap-google-analytics target-jsonl
 ```
 
 ### SDK Dev Guide
@@ -357,6 +355,6 @@ develop your own taps and targets.
 - https://gitlab.com/meltano/tap-google-analytics
 - https://github.com/MeltanoLabs/tap-google-analytics - Migrated to MeltanoLabs and ported to the Meltano SDK
 - https://gitlab.com/hotglue/tap-google-analytics - Hard forked to [hotglue's](https://hotglue.com/) GitLab repo to convert it from Universal Analytics to GA4
-- https://github.com/connorflyn/tap-google-analytics-v4 - Hard forked back to GitHub by [@connorflyn](https://github.com/connorflyn) to add Google Service Account authorization
-- https://github.com/z3z1ma/tap-google-analytics-v4 and https://github.com/radbrt/tap-google-analytics-v4 - Forks to address bugs
-- https://github.com/MeltanoLabs/tap-ga4 - Fork off of https://github.com/radbrt/tap-google-analytics-v4 which was the tip of the fork tree with all the most recent changes and bug fixes
+- https://github.com/connorflyn/tap-google-analytics - Hard forked back to GitHub by [@connorflyn](https://github.com/connorflyn) to add Google Service Account authorization
+- https://github.com/z3z1ma/tap-google-analytics and https://github.com/radbrt/tap-google-analytics - Forks to address bugs
+- https://github.com/MeltanoLabs/tap-ga4 - Fork off of https://github.com/radbrt/tap-google-analytics which was the tip of the fork tree with all the most recent changes and bug fixes
