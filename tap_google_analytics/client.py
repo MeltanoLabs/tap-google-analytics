@@ -1,7 +1,6 @@
 """Custom client handling, including GoogleAnalyticsStream base class."""
 
 import copy
-import socket
 import sys
 from datetime import datetime, timedelta
 from typing import Any, Dict, Iterable, List, Optional
