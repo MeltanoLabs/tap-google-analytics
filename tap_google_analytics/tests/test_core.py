@@ -10,14 +10,14 @@ from tap_google_analytics.tap import TapGoogleAnalytics
 from tap_google_analytics.tests.utilities import get_secrets_dict
 
 SAMPLE_CONFIG_SERVICE = {
-    "view_id": "188392047",
+    "property_id": "312647579",
     "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
     "key_file_location": f"{os.path.dirname(__file__)}/test_data/client_secrets.json",
 }
 
 SAMPLE_CONFIG_CLIENT_SECRETS = {
-    "view_id": "188392047",
+    "property_id": "312647579",
     "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
     "client_secrets": get_secrets_dict(),
@@ -42,7 +42,7 @@ def test_standard_tap_tests(config, sample_config):
 def test_no_credentials():
     """Run standard tap tests from the SDK."""
     SAMPLE_CONFIG_SERVICE2 = {
-        "view_id": "188392047",
+        "property_id": "312647579",
         "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime(
             "%Y-%m-%d"
         ),
