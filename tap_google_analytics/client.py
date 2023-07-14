@@ -3,10 +3,15 @@
 import copy
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 import backoff
-from google.analytics.data_v1beta.types import DateRange, Metric, RunReportRequest
+from google.analytics.data_v1beta.types import (
+    DateRange,
+    Metric,
+    RunReportRequest,
+    RunReportResponse,
+)
 from pendulum import parse
 from singer_sdk import typing as th
 from singer_sdk.streams import Stream
@@ -106,13 +111,13 @@ class GoogleAnalyticsStream(Stream):
 
     def _request_data(
         self, api_report_def, state_filter: str, next_page_token: Optional[Any]
-    ) -> dict:
+    ) -> RunReportResponse:
         return self._query_api(api_report_def, state_filter, next_page_token)
 
     def _get_state_filter(self, context: Optional[dict]) -> str:
         state = self.get_context_state(context)
         state_bookmark = state.get("replication_key_value") or self.config["start_date"]
-        parsed = parse(state_bookmark)
+        parsed = cast(datetime, parse(state_bookmark))
         parsed = parsed.replace(tzinfo=None)
         if parsed < datetime(2019, 1, 1):
             parsed = datetime(2019, 1, 1)
@@ -162,7 +167,7 @@ class GoogleAnalyticsStream(Stream):
             # Cycle until get_next_page_token() no longer returns a value
             finished = not next_page_token
 
-    def _get_next_page_token(self, response: dict, previous_token) -> Any:
+    def _get_next_page_token(self, response: RunReportResponse, previous_token) -> Any:
         """Get the next page token from a response.
 
         Args:
@@ -227,7 +232,9 @@ class GoogleAnalyticsStream(Stream):
                 yield record
 
     @backoff.on_exception(backoff.expo, (Exception), max_tries=5, giveup=is_fatal_error)
-    def _query_api(self, report_definition, state_filter, pageToken=None) -> dict:
+    def _query_api(
+        self, report_definition, state_filter, pageToken=None
+    ) -> RunReportResponse:
         """Query the Analytics Reporting API V4.
 
         Returns
