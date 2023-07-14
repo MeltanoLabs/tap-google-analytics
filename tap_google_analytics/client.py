@@ -1,26 +1,22 @@
 """Custom client handling, including GoogleAnalyticsStream base class."""
 
 import copy
-import socket
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 import backoff
-from googleapiclient.errors import HttpError
+from google.analytics.data_v1beta.types import (
+    DateRange,
+    Metric,
+    RunReportRequest,
+    RunReportResponse,
+)
+from pendulum import parse
 from singer_sdk import typing as th
 from singer_sdk.streams import Stream
 
-from tap_google_analytics.error import (
-    TapGaAuthenticationError,
-    TapGaBackendServerError,
-    TapGaInvalidArgumentError,
-    TapGaQuotaExceededError,
-    TapGaRateLimitError,
-    TapGaUnknownError,
-    error_reason,
-    is_fatal_error,
-)
+from tap_google_analytics.error import is_fatal_error
 
 
 class GoogleAnalyticsStream(Stream):
@@ -35,9 +31,9 @@ class GoogleAnalyticsStream(Stream):
 
         super().__init__(*args, **kwargs)
 
-        self.quota_user = self.config.get("quota_user", None)
         self.end_date = self._get_end_date()
-        self.view_id = self.config["view_id"]
+        self.property_id = self.config["property_id"]
+        self.page_size = 100000
 
     def _get_end_date(self):
         end_date = self.config.get("end_date", datetime.utcnow().strftime("%Y-%m-%d"))
@@ -46,15 +42,7 @@ class GoogleAnalyticsStream(Stream):
         return end_date_offset.strftime("%Y-%m-%d")
 
     def _parse_dimension_type(self, attribute, dimensions_ref):
-        if attribute == "ga:segment":
-            return "string"
-        elif attribute.startswith(
-            ("ga:dimension", "ga:customVarName", "ga:customVarValue")
-        ):
-            # Custom Google Analytics Dimensions that are not part of
-            #  self.dimensions_ref. They are always strings
-            return "string"
-        elif attribute in dimensions_ref:
+        if attribute in dimensions_ref:
             return self._parse_other_attrb_type(dimensions_ref[attribute])
         else:
             self.logger.critical(f"Unsuported GA type: {type}")
@@ -64,7 +52,7 @@ class GoogleAnalyticsStream(Stream):
         # Custom Google Analytics Metrics {ga:goalXXStarts, ga:metricXX, ... }
         # We always treat them as strings as we can not be sure of
         # their data type
-        if attribute.startswith("ga:goal") and attribute.endswith(
+        if attribute.startswith("goal") and attribute.endswith(
             (
                 "Starts",
                 "Completions",
@@ -75,12 +63,7 @@ class GoogleAnalyticsStream(Stream):
             )
         ):
             return "string"
-        elif attribute.startswith("ga:searchGoal") and attribute.endswith(
-            "ConversionRate"
-        ):
-            # Custom Google Analytics Metrics ga:searchGoalXXConversionRate
-            return "string"
-        elif attribute.startswith(("ga:metric", "ga:calcMetric")):
+        elif attribute.startswith(("metric", "calcMetric")):
             return "string"
         elif attribute in metrics_ref:
             return self._parse_other_attrb_type(metrics_ref[attribute])
@@ -91,9 +74,9 @@ class GoogleAnalyticsStream(Stream):
     def _parse_other_attrb_type(self, attr_type):
         data_type = "string"
 
-        if attr_type == "INTEGER":
+        if attr_type in ["integer"]:
             data_type = "integer"
-        elif attr_type == "FLOAT" or attr_type == "PERCENT" or attr_type == "TIME":
+        elif attr_type in ["float", "percent", "time", "seconds"]:
             data_type = "number"
 
         return data_type
@@ -113,14 +96,10 @@ class GoogleAnalyticsStream(Stream):
         report_definition = {"metrics": [], "dimensions": []}
 
         for dimension in report_def_raw["dimensions"]:
-            report_definition["dimensions"].append(
-                {"name": dimension.replace("ga_", "ga:")}
-            )
+            report_definition["dimensions"].append({"name": dimension})
 
         for metric in report_def_raw["metrics"]:
-            report_definition["metrics"].append(
-                {"expression": metric.replace("ga_", "ga:")}
-            )
+            report_definition["metrics"].append(Metric(name=metric))
 
         # Add segmentIds to the request if the stream contains them
         if "segments" in report_def_raw:
@@ -132,52 +111,16 @@ class GoogleAnalyticsStream(Stream):
 
     def _request_data(
         self, api_report_def, state_filter: str, next_page_token: Optional[Any]
-    ) -> dict:
-        try:
-            return self._query_api(api_report_def, state_filter, next_page_token)
-        except HttpError as e:
-            # Process API errors
-            # Use list of errors defined in:
-            # https://developers.google.com/analytics/devguides/reporting/core/v4/errors
-
-            reason = error_reason(e)
-            if reason == "userRateLimitExceeded" or reason == "rateLimitExceeded":
-                self.logger.error(
-                    f"Skipping stream: '{self.name}' due to Rate Limit Errors."
-                )
-                raise TapGaRateLimitError(e._get_reason())
-            elif reason == "quotaExceeded":
-                self.logger.error(
-                    f"Skipping stream: '{self.name}' due to Quota Exceeded Errors."
-                )
-                raise TapGaQuotaExceededError(e._get_reason())
-            elif e.resp.status == 400:
-                self.logger.error(
-                    f"Stream: '{self.name}' failed due to invalid report definition."
-                )
-                raise TapGaInvalidArgumentError(e._get_reason())
-            elif e.resp.status in [401, 402]:
-                self.logger.error(
-                    f"Stopping execution while processing '{self.name}' due to \
-                        Authentication Errors."
-                )
-                raise TapGaAuthenticationError(e._get_reason())
-            elif e.resp.status in [500, 503]:
-                raise TapGaBackendServerError(e._get_reason())
-            else:
-                self.logger.error(
-                    f"Stopping execution while processing '{self.name}' due to Unknown \
-                        Errors."
-                )
-                raise TapGaUnknownError(e._get_reason())
+    ) -> RunReportResponse:
+        return self._query_api(api_report_def, state_filter, next_page_token)
 
     def _get_state_filter(self, context: Optional[dict]) -> str:
         state = self.get_context_state(context)
         state_bookmark = state.get("replication_key_value") or self.config["start_date"]
-        try:
-            parsed = datetime.strptime(state_bookmark, "%Y%m%d")
-        except ValueError:
-            parsed = datetime.strptime(state_bookmark, "%Y-%m-%d")
+        parsed = cast(datetime, parse(state_bookmark))
+        parsed = parsed.replace(tzinfo=None)
+        if parsed < datetime(2019, 1, 1):
+            parsed = datetime(2019, 1, 1)
         # state bookmarks need to be reformatted for API requests
         return datetime.strftime(parsed, "%Y-%m-%d")
 
@@ -213,7 +156,9 @@ class GoogleAnalyticsStream(Stream):
             for row in self._parse_response(resp):
                 yield row
             previous_token = copy.deepcopy(next_page_token)
-            next_page_token = self._get_next_page_token(response=resp)
+            next_page_token = self._get_next_page_token(
+                response=resp, previous_token=previous_token
+            )
             if next_page_token and next_page_token == previous_token:
                 raise RuntimeError(
                     f"Loop detected in pagination. "
@@ -222,38 +167,34 @@ class GoogleAnalyticsStream(Stream):
             # Cycle until get_next_page_token() no longer returns a value
             finished = not next_page_token
 
-    def _get_next_page_token(self, response: dict) -> Any:  # noqa: D417
-        """Return token identifying next page or None if all records have been read.
+    def _get_next_page_token(self, response: RunReportResponse, previous_token) -> Any:
+        """Get the next page token from a response.
 
         Args:
-        ----
-            response: A dict object.
+            response: The response from the API.
+            previous_token: The previous page token.
 
-        Return:
-        ------
-            Reference value to retrieve next page.
-
-        .. _requests.Response:
-            https://docs.python-requests.org/en/latest/api/#requests.Response
+        Returns
+        -------
+            The next page token, or None if there are no more pages.
 
         """
-        report = response.get("reports", [])
-        if report:
-            return report[0].get("nextPageToken")
+        previous_token = previous_token or 0
+        next_token = previous_token + 1
+        total_rows = response.row_count
+        if total_rows >= next_token * self.page_size:
+            return next_token
+        return None
 
     def _parse_response(self, response):
-        report = response.get("reports", [])[0]
-        if report:
-            columnHeader = report.get("columnHeader", {})
-            dimensionHeaders = columnHeader.get("dimensions", [])
-            metricHeaders = columnHeader.get("metricHeader", {}).get(
-                "metricHeaderEntries", []
-            )
+        if response:
+            dimensionHeaders = [d.name for d in response.dimension_headers]
+            metricHeaders = [mh.name for mh in response.metric_headers]
 
-            for row in report.get("data", {}).get("rows", []):
+            for row in response.rows:
                 record = {}
-                dimensions = row.get("dimensions", [])
-                dateRangeValues = row.get("metrics", [])
+                dimensions = [d.value for d in row.dimension_values]
+                dateRangeValues = row.metric_values
 
                 for header, dimension in zip(dimensionHeaders, dimensions):
                     data_type = self._lookup_data_type(
@@ -267,21 +208,22 @@ class GoogleAnalyticsStream(Stream):
                     else:
                         value = dimension
 
-                    record[header.replace("ga:", "ga_")] = value
+                    record[header] = value
 
-                for i, values in enumerate(dateRangeValues):
-                    for metricHeader, value in zip(metricHeaders, values.get("values")):
-                        metric_name = metricHeader.get("name")
-                        metric_type = self._lookup_data_type(
-                            "metric", metric_name, self.dimensions_ref, self.metrics_ref
-                        )
+                for metric_name, value in zip(metricHeaders, dateRangeValues):
+                    metric_type = self._lookup_data_type(
+                        "metric", metric_name, self.dimensions_ref, self.metrics_ref
+                    )
 
-                        if metric_type == "integer":
-                            value = int(value)
-                        elif metric_type == "number":
-                            value = float(value)
+                    if hasattr(value, "value"):
+                        value = value.value
 
-                        record[metric_name.replace("ga:", "ga_")] = value
+                    if metric_type == "integer":
+                        value = int(value)
+                    elif metric_type == "number":
+                        value = float(value)
+
+                    record[metric_name] = value
 
                 # Also add the [start_date,end_date) used for the report
                 record["report_start_date"] = self.config.get("start_date")
@@ -289,10 +231,10 @@ class GoogleAnalyticsStream(Stream):
 
                 yield record
 
-    @backoff.on_exception(
-        backoff.expo, (HttpError, socket.timeout), max_tries=9, giveup=is_fatal_error
-    )
-    def _query_api(self, report_definition, state_filter, pageToken=None) -> dict:
+    @backoff.on_exception(backoff.expo, (Exception), max_tries=5, giveup=is_fatal_error)
+    def _query_api(
+        self, report_definition, state_filter, pageToken=None
+    ) -> RunReportResponse:
         """Query the Analytics Reporting API V4.
 
         Returns
@@ -300,29 +242,16 @@ class GoogleAnalyticsStream(Stream):
             The Analytics Reporting API V4 response.
 
         """
-        body = {
-            "reportRequests": [
-                {
-                    "viewId": self.view_id,
-                    "dateRanges": [
-                        {"startDate": state_filter, "endDate": self.end_date}
-                    ],
-                    "pageSize": "1000",
-                    "pageToken": pageToken,
-                    "metrics": report_definition["metrics"],
-                    "dimensions": report_definition["dimensions"],
-                }
-            ]
-        }
-
-        if "segments" in report_definition:
-            body["reportRequests"][0]["segments"] = report_definition["segments"]
-
-        return (
-            self.analytics.reports()
-            .batchGet(body=body, quotaUser=self.quota_user)
-            .execute()
+        request = RunReportRequest(
+            property=f"properties/{self.property_id}",
+            dimensions=report_definition["dimensions"],
+            metrics=report_definition["metrics"],
+            date_ranges=[DateRange(start_date=state_filter, end_date=self.end_date)],
+            limit=self.page_size,
+            offset=(pageToken or 0) * self.page_size,
         )
+
+        return self.analytics.run_report(request)
 
     @staticmethod
     def _get_datatype(string_type):
@@ -365,14 +294,12 @@ class GoogleAnalyticsStream(Stream):
 
         # Add the dimensions to the schema and as key_properties
         for dimension in self.report["dimensions"]:
-            if dimension == "ga:date":
+            if dimension == "date":
                 date_dimension_included = True
-                self.replication_key = "ga_date"
+                self.replication_key = "date"
             data_type = self._lookup_data_type(
                 "dimension", dimension, self.dimensions_ref, self.metrics_ref
             )
-
-            dimension = dimension.replace("ga:", "ga_")
             properties.append(
                 th.Property(dimension, self._get_datatype(data_type), required=True)
             )
@@ -383,7 +310,6 @@ class GoogleAnalyticsStream(Stream):
             data_type = self._lookup_data_type(
                 "metric", metric, self.dimensions_ref, self.metrics_ref
             )
-            metric = metric.replace("ga:", "ga_")
             properties.append(th.Property(metric, self._get_datatype(data_type)))
 
         # Also add the {start_date, end_date} params for the report query
