@@ -14,7 +14,7 @@ from google.analytics.data_v1beta.types import GetMetadataRequest
 from google.oauth2 import service_account
 
 # Service Account - Google Analytics Authorization
-from google.oauth2.service_account import Credentials as OAuthCredentials
+from google.oauth2.credentials import Credentials as OAuthCredentials
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 
@@ -97,10 +97,10 @@ class TapGoogleAnalytics(Tap):
     def _initialize_credentials(self):
         if self.config.get("oauth_credentials"):
             return OAuthCredentials(
-                None,
-                refresh_token=self.config["refresh_token"],
-                client_id=self.config["client_id"],
-                client_secret=self.config["client_secret"],
+                token=self.config["oauth_credentials"]["access_token"],
+                refresh_token=self.config["oauth_credentials"]["refresh_token"],
+                client_id=self.config["oauth_credentials"]["client_id"],
+                client_secret=self.config["oauth_credentials"]["client_secret"],
                 token_uri="https://accounts.google.com/o/oauth2/token",
             )
         elif self.config.get("key_file_location"):
