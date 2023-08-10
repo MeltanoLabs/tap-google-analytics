@@ -19,16 +19,15 @@
   {
     "name": "traffic_sources",
     "dimensions": [
-      "date"
+      "date",
+      "source",
+      "medium",
+      "sourcePlatform"
     ],
     "metrics": [
       "activeUsers",
-      "newUsers",
       "sessions",
       "sessionsPerUser",
-      "averageSessionDuration",
-      "screenPageViews",
-      "screenPageViewsPerSession",
       "bounceRate",
       "engagementRate"
     ]
