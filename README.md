@@ -355,6 +355,6 @@ develop your own taps and targets.
 - https://gitlab.com/meltano/tap-google-analytics
 - https://github.com/MeltanoLabs/tap-google-analytics - Migrated to MeltanoLabs and ported to the Meltano SDK
 - https://gitlab.com/hotglue/tap-google-analytics - Hard forked to [hotglue's](https://hotglue.com/) GitLab repo to convert it from Universal Analytics to GA4
-- https://github.com/connorflyn/tap-google-analytics - Hard forked back to GitHub by [@connorflyn](https://github.com/connorflyn) to add Google Service Account authorization
-- https://github.com/z3z1ma/tap-google-analytics and https://github.com/radbrt/tap-google-analytics - Forks to address bugs
-- https://github.com/MeltanoLabs/tap-ga4 - Fork off of https://github.com/radbrt/tap-google-analytics which was the tip of the fork tree with all the most recent changes and bug fixes
+- https://github.com/connorflyn/tap-google-analytics-v4 - Hard forked back to GitHub by [@connorflyn](https://github.com/connorflyn) to add Google Service Account authorization
+- https://github.com/z3z1ma/tap-google-analytics-v4 and https://github.com/radbrt/tap-google-analytics-v4 - Forks to address bugs
+- This repo forks off of https://github.com/radbrt/tap-google-analytics-v4 which was the tip of the fork tree with all the most recent changes and bug fixes
