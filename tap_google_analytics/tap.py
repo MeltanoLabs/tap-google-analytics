@@ -84,7 +84,7 @@ class TapGoogleAnalytics(Tap):
         # Optional
         th.Property(
             "reports",
-            th.StringType,
+            th.OrType([th.StringType, th.ObjectType()]),
             description="Google Analytics Reports Definition",
         ),
         th.Property(
@@ -130,18 +130,32 @@ class TapGoogleAnalytics(Tap):
             "defaults", "default_report_definition.json"
         )
 
-        report_def_file = self.config.get("reports", default_reports)
-        if Path(report_def_file).is_file():
+        reports_data = self.config.get("reports", default_reports)
+
+        # If given a file path
+        if isinstance(reports_data, str) and Path(reports_data).is_file():
             try:
-                with open(report_def_file) as f:
+                with open(reports_data) as f:
                     return json.load(f)
             except ValueError:
                 self.logger.critical(
-                    f"The JSON definition in '{report_def_file}' has errors"
+                    f"The JSON definition in '{reports_data}' has errors"
                 )
                 sys.exit(1)
+        # If given a JSON string
+        elif isinstance(reports_data, str):
+            try:
+                return json.loads(reports_data)
+            except json.JSONDecodeError:
+                self.logger.critical(
+                    f"Provided 'reports' config is neither a valid file path nor a valid JSON string."
+                )
+                sys.exit(1)
+        # If given a direct dictionary (parsed JSON)
+        elif isinstance(reports_data, dict):
+            return reports_data
         else:
-            self.logger.critical(f"'{report_def_file}' file not found")
+            self.logger.critical(f"'{reports_data}' is not a valid input for reports")
             sys.exit(1)
 
     def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
