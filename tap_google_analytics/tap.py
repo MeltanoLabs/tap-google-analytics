@@ -126,29 +126,31 @@ class TapGoogleAnalytics(Tap):
         return BetaAnalyticsDataClient(credentials=self.credentials)
 
     def _get_reports_config(self):
-        default_reports = Path(__file__).parent.joinpath(
-            "defaults", "default_report_definition.json"
-        )
+        reports_value = self.config.get("reports")
 
-        report_def = self.config.get("reports", default_reports)
+        # If reports is directly a list
+        if isinstance(reports_value, list):
+            return reports_value
 
-        # Check if reports is a list
-        if isinstance(report_def, list):
-            return report_def
+        # If reports is a string path
+        if isinstance(reports_value, str):
+            report_def_file = reports_value
+            if not Path(report_def_file).is_file():
+                self.logger.critical(f"'{report_def_file}' file not found")
+                sys.exit(1)
 
-        # If it's not a list, assume it's a path to a JSON file and try to read from it
-        if Path(report_def).is_file():
             try:
-                with open(report_def) as f:
+                with open(report_def_file) as f:
                     return json.load(f)
             except ValueError:
                 self.logger.critical(
-                    f"The JSON definition in '{report_def}' has errors"
+                    f"The JSON definition in '{report_def_file}' has errors"
                 )
                 sys.exit(1)
-        else:
-            self.logger.critical(f"'{report_def}' file not found")
-            sys.exit(1)
+
+        # If reports is neither a string nor a list
+        self.logger.critical(f"'reports' configuration must be either a string path or a list of report objects")
+        sys.exit(1)
 
     def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
