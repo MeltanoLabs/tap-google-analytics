@@ -88,6 +88,17 @@ class TapGoogleAnalytics(Tap):
             description="Google Analytics Reports Definition (either a string path or a JSON representation of a list of report objects)",
         ),
         th.Property(
+            "reports_list",
+            th.ArrayType(
+                th.ObjectType(
+                th.Property("name", th.StringType),
+                th.Property("dimensions", th.ArrayType(th.StringType)),
+                th.Property("metrics", th.ArrayType(th.StringType)),
+            )
+        ),
+    description="List of Google Analytics Reports Definitions",
+),
+            th.Property(
             "end_date",
             th.StringType,
             description="The last record date to sync",
@@ -126,29 +137,27 @@ class TapGoogleAnalytics(Tap):
         return BetaAnalyticsDataClient(credentials=self.credentials)
 
     def _get_reports_config(self):
-        reports_value = self.config.get("reports")
+        if self.config.get("reports_list"):
+            return self.config["reports_list"]
 
-        # First, treat reports_value as a filepath and try to read the file.
-        if Path(reports_value).is_file():
-            with open(reports_value) as f:
-                try:
-                    return json.load(f)
-                except json.JSONDecodeError:
-                    self.logger.critical(
-                        f"The JSON definition in '{reports_value}' has errors"
-                    )
-                    sys.exit(1)
-        else:
-            # If it's not a valid filepath, try parsing it as JSON.
+        default_reports = Path(__file__).parent.joinpath(
+            "defaults", "default_report_definition.json"
+        )
+
+        report_def_file = self.config.get("reports", default_reports)
+        if Path(report_def_file).is_file():
             try:
-                reports_json = json.loads(reports_value)
-                if isinstance(reports_json, list):
-                    return reports_json
-            except (json.JSONDecodeError, TypeError):  # TypeError catches None cases
+                with open(report_def_file) as f:
+                    return json.load(f)
+            except ValueError:
                 self.logger.critical(
-                    f"'{reports_value}' is neither a valid JSON string nor a valid file path."
+                    f"The JSON definition in '{report_def_file}' has errors"
                 )
                 sys.exit(1)
+        else:
+            self.logger.critical(f"'{report_def_file}' file not found")
+            sys.exit(1)
+
     def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
 
