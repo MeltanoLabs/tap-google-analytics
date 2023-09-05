@@ -128,29 +128,27 @@ class TapGoogleAnalytics(Tap):
     def _get_reports_config(self):
         reports_value = self.config.get("reports")
 
-        # Try interpreting the string as JSON first
-        try:
-            reports_json = json.loads(reports_value)
-            if isinstance(reports_json, list):
-                return reports_json
-        except json.JSONDecodeError:
-            pass  # It's not JSON; proceed to treat it as a file path
-
-        # If reports is a string path
-        report_def_file = reports_value
-        if not Path(report_def_file).is_file():
-            self.logger.critical("reports needs to be either a json file or json")
-            sys.exit(1)
-
-        try:
-            with open(report_def_file) as f:
-                return json.load(f)
-        except ValueError:
-            self.logger.critical(
-                f"The JSON definition in '{report_def_file}' has errors"
-            )
-            sys.exit(1)
-
+        # First, treat reports_value as a filepath and try to read the file.
+        if Path(reports_value).is_file():
+            with open(reports_value) as f:
+                try:
+                    return json.load(f)
+                except json.JSONDecodeError:
+                    self.logger.critical(
+                        f"The JSON definition in '{reports_value}' has errors"
+                    )
+                    sys.exit(1)
+        else:
+            # If it's not a valid filepath, try parsing it as JSON.
+            try:
+                reports_json = json.loads(reports_value)
+                if isinstance(reports_json, list):
+                    return reports_json
+            except (json.JSONDecodeError, TypeError):  # TypeError catches None cases
+                self.logger.critical(
+                    f"'{reports_value}' is neither a valid JSON string nor a valid file path."
+                )
+                sys.exit(1)
     def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
 
