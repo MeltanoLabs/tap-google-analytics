@@ -84,8 +84,8 @@ class TapGoogleAnalytics(Tap):
         # Optional
         th.Property(
             "reports",
-            th.OrType([th.StringType(), th.ArrayType(th.ObjectType())]),  # Allow either a string (filepath) or a list of objects
-            description="Google Analytics Reports Definition",
+            th.AnyType(),
+            description="Google Analytics Reports Definition (either a string path or a list of report objects)",
         ),
         th.Property(
             "end_date",
