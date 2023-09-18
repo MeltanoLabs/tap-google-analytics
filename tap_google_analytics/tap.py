@@ -181,8 +181,8 @@ class TapGoogleAnalytics(Tap):
         results = self.analytics.get_metadata(request)
 
         prop_id = self.config["property_id"]
-        LOGGER.info(f"**** metadata for {prop_id}")
-        LOGGER.info(results)
+        LOGGER.debug(f"**** metadata for {prop_id}")
+        LOGGER.debug(results)
 
         for metric in results.metrics:
             metrics[metric.api_name] = metric.type_.name.replace("TYPE_", "").lower()
