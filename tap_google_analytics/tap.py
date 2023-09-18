@@ -85,7 +85,7 @@ class TapGoogleAnalytics(Tap):
         th.Property(
             "reports",
             th.StringType,
-            description="Google Analytics Reports Definition (either a string path or a JSON representation of a list of report objects)",
+            description="A path to a file containing the Google Analytics reports definitions",
         ),
         th.Property(
             "reports_list",
