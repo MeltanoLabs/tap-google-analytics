@@ -91,14 +91,26 @@ class TapGoogleAnalytics(Tap):
             "reports_list",
             th.ArrayType(
                 th.ObjectType(
-                th.Property("name", th.StringType),
-                th.Property("dimensions", th.ArrayType(th.StringType)),
-                th.Property("metrics", th.ArrayType(th.StringType)),
-            )
+                    th.Property(
+                        "name",
+                        th.StringType,
+                        description="Google Analytics Report name",
+                    ),
+                    th.Property(
+                        "dimensions",
+                        th.ArrayType(th.StringType),
+                        description="Google Analytics Dimensions",
+                    ),
+                    th.Property(
+                        "metrics",
+                        th.ArrayType(th.StringType),
+                        description="Google Analytics Metrics",
+                    ),
+                ),
+            ),
+            description="List of Google Analytics Reports Definitions",
         ),
-    description="List of Google Analytics Reports Definitions",
-),
-            th.Property(
+        th.Property(
             "end_date",
             th.StringType,
             description="The last record date to sync",
