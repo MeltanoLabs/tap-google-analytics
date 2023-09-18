@@ -22,8 +22,8 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 | client_secrets      | False    | None    | Google Analytics Client Secrets Dictionary |
 | key_file_location   | False    | None    | File Path to Google Analytics Client Secrets |
 | oauth_credentials   | False    | None    | Google Analytics OAuth Credentials |
-| reports             | False    | None    | File Path to Google Analytics Reports Definition |
-| reports_list        | False    | None    | Google Analytics Reports Definition in JSON format |
+| reports             | False    | None    | A path to a file containing the Google Analytics reports definitions |
+| reports_list        | False    | None    | List of Google Analytics Reports Definitions |
 | end_date            | False    | None    | The last record date to sync |
 | stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
 | stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
