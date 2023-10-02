@@ -22,7 +22,8 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 | client_secrets      | False    | None    | Google Analytics Client Secrets Dictionary |
 | key_file_location   | False    | None    | File Path to Google Analytics Client Secrets |
 | oauth_credentials   | False    | None    | Google Analytics OAuth Credentials |
-| reports             | False    | None    | Google Analytics Reports Definition |
+| reports             | False    | None    | A path to a file containing the Google Analytics reports definitions |
+| reports_list        | False    | None    | List of Google Analytics Reports Definitions |
 | end_date            | False    | None    | The last record date to sync |
 | stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
 | stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
@@ -235,6 +236,33 @@ If you want to use the `segment` dimension, you must specify the segment IDs in 
 
 Segment IDs can be found with the [GA Query explorer](https://ga-dev-tools.appspot.com/query-explorer). The account configured for authentication must either own the segment, or have "Collaborate" access to the GA view as well as the segment itself having its Segment Availability set to "Collaborators and I can apply/edit Segment in this View".
 
+## reports_list
+
+There may be situations where you won't want to save a file to your meltano directory. For example, if your meltano service is managing multiple user configurations. reports_list allows you to pass in a JSON configuration directly. You can directly pass in a list of reports in a format like below:
+
+```
+[
+  {
+    "name": "acquisition",
+    "dimensions": [
+      "date",
+      "segment",
+      "channelGrouping"
+    ],
+    "metrics": [
+      "users",
+      "newUsers",
+      "sessions"
+    ],
+    "segments": [
+      "gaid::-1",
+      "gaid::U7LSsrWRTq6JIIS8G8brrQ"
+    ]
+  }
+]
+```
+
+
 
 ## Usage
 
@@ -347,7 +375,7 @@ meltano elt tap-google-analytics target-jsonl
 
 ### SDK Dev Guide
 
-See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to 
+See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to
 develop your own taps and targets.
 
 ### Repository History and Contributors

@@ -85,7 +85,30 @@ class TapGoogleAnalytics(Tap):
         th.Property(
             "reports",
             th.StringType,
-            description="Google Analytics Reports Definition",
+            description="A path to a file containing the Google Analytics reports definitions",
+        ),
+        th.Property(
+            "reports_list",
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property(
+                        "name",
+                        th.StringType,
+                        description="Google Analytics Report name",
+                    ),
+                    th.Property(
+                        "dimensions",
+                        th.ArrayType(th.StringType),
+                        description="Google Analytics Dimensions",
+                    ),
+                    th.Property(
+                        "metrics",
+                        th.ArrayType(th.StringType),
+                        description="Google Analytics Metrics",
+                    ),
+                ),
+            ),
+            description="List of Google Analytics Reports Definitions",
         ),
         th.Property(
             "end_date",
@@ -126,6 +149,9 @@ class TapGoogleAnalytics(Tap):
         return BetaAnalyticsDataClient(credentials=self.credentials)
 
     def _get_reports_config(self):
+        if self.config.get("reports_list"):
+            return self.config["reports_list"]
+
         default_reports = Path(__file__).parent.joinpath(
             "defaults", "default_report_definition.json"
         )
