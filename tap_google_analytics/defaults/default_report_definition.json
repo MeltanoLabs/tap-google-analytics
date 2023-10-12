@@ -116,5 +116,26 @@
       "totalRevenue",
       "transactions"
       ]
+  },
+  {
+    "name": "pages",
+    "dimensions": [
+      "date",
+      "hostName",
+      "pagePath",
+      "sessionMedium",
+      "sessionSource"
+    ],
+    "metrics" : [
+    "activeUsers",
+    "bounceRate",
+    "engagedSessions",
+    "engagementRate",
+    "eventCount",
+    "screenPageViews",
+    "screenPageViewsPerUser",
+    "screenPageViewsPerSession",
+    "userEngagementDuration"
+    ]
   }
 ]
