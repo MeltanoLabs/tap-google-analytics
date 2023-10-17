@@ -3,6 +3,7 @@
 import json
 import logging
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
@@ -78,6 +79,11 @@ class TapGoogleAnalytics(Tap):
                     th.StringType,
                     description="Google Analytics Client Secret",
                 ),
+                th.Property(
+                    "expiry",
+                    th.StringType,
+                    description="When the access token expires. ISO 8601 offset-naive UTC datetime string like '1980-01-01T00:00:00'",
+                ),
             ),
             description="Google Analytics OAuth Credentials",
         ),
@@ -119,12 +125,17 @@ class TapGoogleAnalytics(Tap):
 
     def _initialize_credentials(self):
         if self.config.get("oauth_credentials"):
+            expiry = None
+            if "expiry" in self.config["oauth_credentials"]:
+                expiry = datetime.fromisoformat(self.config["oauth_credentials"]["expiry"])
+
             return OAuthCredentials(
                 token=self.config["oauth_credentials"]["access_token"],
                 refresh_token=self.config["oauth_credentials"]["refresh_token"],
                 client_id=self.config["oauth_credentials"]["client_id"],
                 client_secret=self.config["oauth_credentials"]["client_secret"],
                 token_uri="https://accounts.google.com/o/oauth2/token",
+                expiry=expiry,
             )
         elif self.config.get("key_file_location"):
             with open(self.config["key_file_location"]) as f:
