@@ -1,5 +1,8 @@
 """GoogleAnalytics error classes."""
 
+from __future__ import annotations
+
+import contextlib
 import json
 import logging
 import socket
@@ -56,12 +59,9 @@ def error_reason(e):
     # the JSON response body.
 
     reason = ""
-    try:
+    with contextlib.suppress(Exception):
         data = json.loads(e.content.decode("utf-8"))
         reason = data["error"]["errors"][0]["reason"]
-    except Exception:
-        pass
-
     return reason
 
 
@@ -75,7 +75,7 @@ def is_fatal_error(error):
     if isinstance(error, socket.timeout):
         return False
 
-    status = error.code if getattr(error, "message") is not None else None
+    status = error.code if error.message is not None else None
     if status in [500, 503]:
         return False
 
@@ -85,5 +85,5 @@ def is_fatal_error(error):
     if reason in NON_FATAL_ERRORS:
         return False
 
-    LOGGER.critical(f"Received fatal error {error}, reason={reason}, status={status}")
+    LOGGER.critical("Received fatal error %s, reason=%s, status=%s", error, reason, status)
     return True
