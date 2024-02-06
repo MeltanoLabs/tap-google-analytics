@@ -1,5 +1,7 @@
 """Tests standard tap features using the built-in SDK tests library."""
 
+from __future__ import annotations
+
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -7,13 +9,13 @@ import pytest
 from singer_sdk.testing import get_standard_tap_tests
 
 from tap_google_analytics.tap import TapGoogleAnalytics
-from tap_google_analytics.tests.utilities import get_secrets_dict
+from tests.utilities import get_secrets_dict
 
 SAMPLE_CONFIG_SERVICE = {
     "property_id": "312647579",
     "end_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
-    "key_file_location": f"{os.path.dirname(__file__)}/test_data/client_secrets.json",
+    "key_file_location": f"{os.path.dirname(__file__)}/test_data/client_secrets.json",  # noqa: PTH120
 }
 
 SAMPLE_CONFIG_CLIENT_SECRETS = {
@@ -32,7 +34,7 @@ SAMPLE_CONFIG_CLIENT_SECRETS = {
     ],
 )
 # Run standard built-in tap tests from the SDK:
-def test_standard_tap_tests(config, sample_config):
+def test_standard_tap_tests(config, sample_config):  # noqa: ARG001
     """Run standard tap tests from the SDK."""
     tests = get_standard_tap_tests(TapGoogleAnalytics, config=sample_config)
     for test in tests:
@@ -41,13 +43,11 @@ def test_standard_tap_tests(config, sample_config):
 
 def test_no_credentials():
     """Run standard tap tests from the SDK."""
-    SAMPLE_CONFIG_SERVICE2 = {
+    SAMPLE_CONFIG_SERVICE2 = {  # noqa: N806
         "property_id": "312647579",
-        "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime(
-            "%Y-%m-%d"
-        ),
+        "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
     }
-    with pytest.raises(Exception) as e:
+    with pytest.raises(Exception) as e:  # noqa: PT012, PT011
         tap = TapGoogleAnalytics(config=SAMPLE_CONFIG_SERVICE2)
         tap.run_connection_test()
         assert e.value == "No valid credentials provided."

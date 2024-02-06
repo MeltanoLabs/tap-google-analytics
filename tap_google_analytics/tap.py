@@ -1,16 +1,17 @@
 """GoogleAnalytics tap class."""
 
+from __future__ import annotations
+
 import json
 import logging
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import GetMetadataRequest
 
 # OAuth - Google Analytics Authorization
-# from google.oauth2.credentials import Credentials as ServiceAccountCredentials
+# from google.oauth2.credentials import Credentials as ServiceAccountCredentials  # noqa: ERA001
 from google.oauth2 import service_account
 
 # Service Account - Google Analytics Authorization
@@ -124,25 +125,24 @@ class TapGoogleAnalytics(Tap):
                 refresh_token=self.config["oauth_credentials"]["refresh_token"],
                 client_id=self.config["oauth_credentials"]["client_id"],
                 client_secret=self.config["oauth_credentials"]["client_secret"],
-                token_uri="https://accounts.google.com/o/oauth2/token",
+                token_uri="https://accounts.google.com/o/oauth2/token",  # noqa: S106
             )
-        elif self.config.get("key_file_location"):
-            with open(self.config["key_file_location"]) as f:
-                return service_account.Credentials.from_service_account_info(
-                    json.load(f)
-                )
-        elif self.config.get("client_secrets"):
+
+        if self.config.get("key_file_location"):
+            with open(self.config["key_file_location"]) as f:  # noqa: PTH123
+                return service_account.Credentials.from_service_account_info(json.load(f))
+
+        if self.config.get("client_secrets"):
             return service_account.Credentials.from_service_account_info(
                 self.config["client_secrets"]
             )
-        else:
-            raise Exception("No valid credentials provided.")
+
+        raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
 
     def _initialize_analytics(self):
         """Initialize an Analytics Reporting API V4 service object.
 
-        Returns
-        -------
+        Returns:
           An authorized Analytics Reporting API V4 service object.
 
         """
@@ -159,22 +159,19 @@ class TapGoogleAnalytics(Tap):
         report_def_file = self.config.get("reports", default_reports)
         if Path(report_def_file).is_file():
             try:
-                with open(report_def_file) as f:
+                with open(report_def_file) as f:  # noqa: PTH123
                     return json.load(f)
             except ValueError:
-                self.logger.critical(
-                    f"The JSON definition in '{report_def_file}' has errors"
-                )
+                self.logger.critical("The JSON definition in '%s' has errors", report_def_file)
                 sys.exit(1)
         else:
-            self.logger.critical(f"'{report_def_file}' file not found")
+            self.logger.critical("'%s' file not found", report_def_file)
             sys.exit(1)
 
-    def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
+    def _fetch_valid_api_metadata(self) -> tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
 
-        Returns
-        -------
+        Returns:
           A map of (dimensions, metrics) hashes
 
           Each available dimension can be found in dimensions with its data type
@@ -184,24 +181,18 @@ class TapGoogleAnalytics(Tap):
             as the value. e.g. metrics['sessions'] == INTEGER
 
         """
-        metrics = {}
-        dimensions = {}
-
-        request = GetMetadataRequest(
-            name=f"properties/{self.config['property_id']}/metadata"
-        )
+        request = GetMetadataRequest(name=f"properties/{self.config['property_id']}/metadata")
         results = self.analytics.get_metadata(request)
 
         prop_id = self.config["property_id"]
-        LOGGER.debug(f"**** metadata for {prop_id}")
+        LOGGER.debug("**** metadata for %s", prop_id)
         LOGGER.debug(results)
 
-        for metric in results.metrics:
-            metrics[metric.api_name] = metric.type_.name.replace("TYPE_", "").lower()
-
-        for dimension in results.dimensions:
-            dimensions[dimension.api_name] = "string"
-
+        metrics = {
+            metric.api_name: metric.type_.name.replace("TYPE_", "").lower()
+            for metric in results.metrics
+        }
+        dimensions = {dimension.api_name: "string" for dimension in results.dimensions}
         return dimensions, metrics
 
     def _validate_report_def(self, reports_definition):
@@ -220,21 +211,22 @@ class TapGoogleAnalytics(Tap):
             # Check that not too many metrics && dimensions have been requested
             if len(metrics) == 0:
                 self.logger.critical(
-                    f"'{name}' has no metrics defined. GA reports must specify at \
-                     least one metric."
+                    "'%s' has no metrics defined. GA reports must specify at least one metric.",
+                    name,
                 )
                 sys.exit(1)
-            elif len(metrics) > 10:
+            elif len(metrics) > 10:  # noqa: PLR2004
                 self.logger.critical(
-                    f"'{name}' has too many metrics defined. GA \
-                    reports can have maximum 10 metrics."
+                    "'%s' has too many metrics defined. GA reports can have maximum 10 metrics.",
+                    name,
                 )
                 sys.exit(1)
 
-            if len(dimensions) > 7:
+            if len(dimensions) > 7:  # noqa: PLR2004
                 self.logger.critical(
-                    f"'{name}' has too many dimensions defined. GA reports \
-                    can have maximum 7 dimensions."
+                    "'%s' has too many dimensions defined. GA reports can have maximum 7 "
+                    "dimensions.",
+                    name,
                 )
                 sys.exit(1)
 
@@ -250,13 +242,9 @@ class TapGoogleAnalytics(Tap):
         # check that all the dimensions are proper Google Analytics Dimensions
         for dimension in dimensions:
             if dimension not in self.dimensions_ref:
-                self.logger.critical(
-                    f"'{dimension}' is not a valid Google Analytics dimension"
-                )
+                self.logger.critical("'%s' is not a valid Google Analytics dimension", dimension)
                 self.logger.info(
-                    "For details see \
-                    https://developers.google.com/analytics/ \
-                    devguides/reporting/data/v1/api-schema"
+                    "For details see https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema"
                 )
                 sys.exit(1)
 
@@ -275,23 +263,20 @@ class TapGoogleAnalytics(Tap):
             ):
                 # Custom Google Analytics Metrics {goalXXStarts, goalXXValue, ...}
                 continue
-            elif metric.startswith("searchGoal") and metric.endswith("ConversionRate"):
+
+            if metric.startswith("searchGoal") and metric.endswith("ConversionRate"):
                 # Custom Google Analytics Metrics searchGoalXXConversionRate
                 continue
-            elif (
-                not metric.startswith(("metric", "calcMetric"))
-                and metric not in self.metrics_ref
-            ):
-                self.logger.critical(
-                    f"'{metric}' is not a valid Google Analytics metric"
-                )
+
+            if not metric.startswith(("metric", "calcMetric")) and metric not in self.metrics_ref:
+                self.logger.critical("'%s' is not a valid Google Analytics metric", metric)
                 self.logger.info(
                     "For details see https://ga-dev-tools.google/ga4/\
                         dimensions-metrics-explorer/"
                 )
                 sys.exit(1)
 
-    def _custom_initilization(self):
+    def _custom_initialization(self):
         # init GA client
         self.credentials = self._initialize_credentials()
         self.analytics = self._initialize_analytics()
@@ -300,11 +285,11 @@ class TapGoogleAnalytics(Tap):
         self.reports_definition = self._get_reports_config()
         self._validate_report_def(self.reports_definition)
 
-    def discover_streams(self) -> List[Stream]:
+    def discover_streams(self) -> list[Stream]:
         """Return a list of discovered streams."""
         # Generate and return the catalog
-        self._custom_initilization()
-        stream_list: List[Stream] = []
+        self._custom_initialization()
+        stream_list: list[Stream] = []
 
         for report in self.reports_definition:
             stream = GoogleAnalyticsStream(
