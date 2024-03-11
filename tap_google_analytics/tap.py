@@ -60,11 +60,6 @@ class TapGoogleAnalytics(Tap):
             "oauth_credentials",
             th.ObjectType(
                 th.Property(
-                    "access_token",
-                    th.StringType,
-                    description="Google Analytics Access Token",
-                ),
-                th.Property(
                     "refresh_token",
                     th.StringType,
                     description="Google Analytics Refresh Token",
@@ -120,12 +115,12 @@ class TapGoogleAnalytics(Tap):
 
     def _initialize_credentials(self):
         if self.config.get("oauth_credentials"):
-            return OAuthCredentials(
-                token=self.config["oauth_credentials"]["access_token"],
-                refresh_token=self.config["oauth_credentials"]["refresh_token"],
-                client_id=self.config["oauth_credentials"]["client_id"],
-                client_secret=self.config["oauth_credentials"]["client_secret"],
-                token_uri="https://accounts.google.com/o/oauth2/token",  # noqa: S106
+            return OAuthCredentials.from_authorized_user_info(
+                {
+                    "client_id": self.config["oauth_credentials"]["client_id"],
+                    "client_secret": self.config["oauth_credentials"]["client_secret"],
+                    "refresh_token": self.config["oauth_credentials"]["refresh_token"],
+                }
             )
 
         if self.config.get("key_file_location"):
