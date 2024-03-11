@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import List, Tuple
 
 from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
 from oauth2client.service_account import ServiceAccountCredentials
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
