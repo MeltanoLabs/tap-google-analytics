@@ -5,11 +5,11 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
+from google.oauth2.credentials import Credentials as OAuthCredentials
 from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
-from google.oauth2.credentials import Credentials as OAuthCredentials
 
 from tap_google_analytics.client import GoogleAnalyticsStream
 
