@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
+from google.oauth2.credentials import Credentials as OAuthCredentials
 from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
 from oauth2client.service_account import ServiceAccountCredentials
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
@@ -54,15 +54,6 @@ class TapGoogleAnalytics(Tap):
             "oauth_credentials",
             th.ObjectType(
                 th.Property(
-                    "access_token",
-                    th.StringType,
-                    description=(
-                        "Google Analytics Access Token. See "
-                        "https://developers.google.com/analytics/devguides/reporting/"
-                        "core/v4/authorization#OAuth2Authorizing."
-                    ),
-                ),
-                th.Property(
                     "refresh_token",
                     th.StringType,
                     description=(
@@ -107,14 +98,12 @@ class TapGoogleAnalytics(Tap):
 
     def _initialize_credentials(self):
         if self.config.get("oauth_credentials"):
-            return GoogleCredentials(
-                access_token=self.config["oauth_credentials"]["access_token"],
-                refresh_token=self.config["oauth_credentials"]["refresh_token"],
-                client_id=self.config["oauth_credentials"]["client_id"],
-                client_secret=self.config["oauth_credentials"]["client_secret"],
-                token_expiry=None,  # let the library refresh the token if it is expired
-                token_uri="https://accounts.google.com/o/oauth2/token",
-                user_agent="tap-google-analytics (via singer.io)",
+            return OAuthCredentials.from_authorized_user_info(
+                {
+                    "client_id": self.config["oauth_credentials"]["client_id"],
+                    "client_secret": self.config["oauth_credentials"]["client_secret"],
+                    "refresh_token": self.config["oauth_credentials"]["refresh_token"],
+                }
             )
         elif self.config.get("key_file_location"):
             return ServiceAccountCredentials.from_json_keyfile_name(
