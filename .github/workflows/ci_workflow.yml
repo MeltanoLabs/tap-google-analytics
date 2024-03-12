@@ -40,7 +40,9 @@ jobs:
     env:
       CLIENT_SECRETS: ${{ secrets.GA_CLIENT_SECRETS }}
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      POETRY_VERSION: "1.2.2"
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
