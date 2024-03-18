@@ -18,7 +18,7 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 python = ">=3.8"
 backports-datetime-fromisoformat = {version = "~=2.0.1", python = "<3.11"}
-singer-sdk = "~=0.35.0"
+singer-sdk = "~=0.36.1"
 google-analytics-data = "~=0.14.2"
 
 [tool.poetry.group.dev.dependencies]
