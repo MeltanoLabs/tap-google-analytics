@@ -1568,13 +1568,13 @@ files = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.35.0"
+version = "0.36.1"
 description = "A framework for building Singer taps"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "singer_sdk-0.35.0-py3-none-any.whl", hash = "sha256:0f56be58655708dd97df4b892ad86bc74cc7a96c360bf4d22362391d0668b8be"},
-    {file = "singer_sdk-0.35.0.tar.gz", hash = "sha256:3e4048a0e2aaef080acff2bca1d27a0dafcf24684f763cc46ed2b1a0c6970fd7"},
+    {file = "singer_sdk-0.36.1-py3-none-any.whl", hash = "sha256:bce8c65320df77cd666db7033dc58fecc3af9af9bb777299f1c5a07faef32fd9"},
+    {file = "singer_sdk-0.36.1.tar.gz", hash = "sha256:445263e9da946191e5a30b4464533b659f8fd9d8a6767cd66124e948ba6bf554"},
 ]
 
 [package.dependencies]
@@ -1584,9 +1584,9 @@ click = ">=8.0,<9.0"
 cryptography = ">=3.4.6"
 fs = ">=2.4.16"
 importlib-metadata = {version = "<8.0.0", markers = "python_version < \"3.12\""}
-importlib-resources = {version = ">=5.12.0", markers = "python_version < \"3.9\""}
+importlib-resources = {version = ">=5.12.0,<6.2.0", markers = "python_version < \"3.9\""}
 inflection = ">=0.5.1"
-joblib = ">=1.0.1"
+joblib = ">=1.3.0"
 jsonpath-ng = ">=1.5.3"
 jsonschema = ">=4.16.0"
 packaging = ">=23.1"
@@ -1604,8 +1604,8 @@ typing-extensions = ">=4.5.0"
 urllib3 = ">=1.26,<2"
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "myst-parser (>=1)", "sphinx (>=4.5)", "sphinx-autobuild (>=2021.3.14)", "sphinx-copybutton (>=0.3.1)", "sphinx-inline-tabs (>=2023.4.21)", "sphinx-notfound-page (>=1.0.0)", "sphinx-reredirects (>=0.1.1)"]
-faker = ["faker (>=22.5,<23.0)"]
+docs = ["furo (>=2022.12.7)", "myst-parser (>=1)", "pytest (>=7.2.1)", "sphinx (>=4.5)", "sphinx-autobuild (>=2021.3.14)", "sphinx-copybutton (>=0.3.1)", "sphinx-inline-tabs (>=2023.4.21)", "sphinx-notfound-page (>=1.0.0)", "sphinx-reredirects (>=0.1.1)"]
+faker = ["faker (>=22.5,<25.0)"]
 parquet = ["numpy (>=1.22)", "numpy (>=1.22,<1.25)", "pyarrow (>=13)"]
 s3 = ["fs-s3fs (>=1.1.1)"]
 testing = ["pytest (>=7.2.1)", "pytest-durations (>=1.2.0)"]
@@ -1775,4 +1775,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8"
-content-hash = "4eb7c306d84d8163e612d8161d869ca77b569f1a9865e90427e42dd220e29596"
+content-hash = "ab5a9cfdda60350f57ed86b189d74b363b743b03c7c61d7abfb9c2422afb36a4"
