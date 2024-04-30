@@ -107,7 +107,12 @@ class GoogleAnalyticsStream(Stream):
 
     @staticmethod
     def _generate_report_definition(report_def_raw):
-        report_definition = {"metrics": [], "dimensions": [], "metricFilter": None, "dimensionFilter": None}
+        report_definition = {
+            "metrics": [],
+            "dimensions": [],
+            "metricFilter": None,
+            "dimensionFilter": None,
+        }
 
         for dimension in report_def_raw["dimensions"]:
             report_definition["dimensions"].append({"name": dimension})
