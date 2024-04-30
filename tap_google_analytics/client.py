@@ -107,13 +107,19 @@ class GoogleAnalyticsStream(Stream):
 
     @staticmethod
     def _generate_report_definition(report_def_raw):
-        report_definition = {"metrics": [], "dimensions": []}
+        report_definition = {"metrics": [], "dimensions": [], "metricFilter": None, "dimensionFilter": None}
 
         for dimension in report_def_raw["dimensions"]:
             report_definition["dimensions"].append({"name": dimension})
 
         for metric in report_def_raw["metrics"]:
             report_definition["metrics"].append(Metric(name=metric))
+
+        if "metric_filter" in report_def_raw:
+            report_definition["metric_filter"] = report_def_raw["metric_filter"]
+
+        if "dimension_filter" in report_def_raw:
+            report_definition["dimension_filter"] = report_def_raw["dimension_filter"]
 
         # Add segmentIds to the request if the stream contains them
         if "segments" in report_def_raw:
@@ -253,6 +259,8 @@ class GoogleAnalyticsStream(Stream):
             metrics=report_definition["metrics"],
             date_ranges=[DateRange(start_date=state_filter, end_date=self.end_date)],
             limit=self.page_size,
+            metric_filter=report_definition["metric_filter"],
+            dimension_filter=report_definition["dimension_filter"],
             offset=(pageToken or 0) * self.page_size,
         )
 
