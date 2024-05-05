@@ -120,11 +120,11 @@ class GoogleAnalyticsStream(Stream):
         for metric in report_def_raw["metrics"]:
             report_definition["metrics"].append(Metric(name=metric))
 
-        if "metric_filter" in report_def_raw:
-            report_definition["metric_filter"] = report_def_raw["metric_filter"]
+        if "metricFilter" in report_def_raw:
+            report_definition["metricFilter"] = report_def_raw["metricFilter"]
 
-        if "dimension_filter" in report_def_raw:
-            report_definition["dimension_filter"] = report_def_raw["dimension_filter"]
+        if "dimensionFilter" in report_def_raw:
+            report_definition["dimensionFilter"] = report_def_raw["dimensionFilter"]
 
         # Add segmentIds to the request if the stream contains them
         if "segments" in report_def_raw:
@@ -264,8 +264,8 @@ class GoogleAnalyticsStream(Stream):
             metrics=report_definition["metrics"],
             date_ranges=[DateRange(start_date=state_filter, end_date=self.end_date)],
             limit=self.page_size,
-            metric_filter=report_definition["metric_filter"],
-            dimension_filter=report_definition["dimension_filter"],
+            metric_filter=report_definition["metricFilter"],
+            dimension_filter=report_definition["dimensionFilter"],
             offset=(pageToken or 0) * self.page_size,
         )
 
