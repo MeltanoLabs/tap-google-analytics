@@ -8,24 +8,18 @@ requires = [
 name = "tap-google-analytics"
 version = "0.0.6"
 description = "`tap-google-analytics` is a Singer tap for GoogleAnalytics, built with the Meltano SDK for Singer Taps."
-authors = [
-  "Pat Nadolny",
-]
+authors = ["Pat Nadolny"]
 keywords = [
-  "ELT",
-  "GoogleAnalytics",
+    "ELT",
+    "GoogleAnalytics",
 ]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = ">=3.8"
-backports-datetime-fromisoformat = { version = "~=2.0.1", python = "<3.11" }
+backports-datetime-fromisoformat = {version = "~=2.0.1", python = "<3.11"}
 singer-sdk = "~=0.35.0"
 google-analytics-data = "~=0.14.2"
-
-[tool.poetry.scripts]
-# CLI declaration
-tap-google-analytics = 'tap_google_analytics.tap:TapGoogleAnalytics.cli'
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.2.1"
@@ -33,71 +27,72 @@ coverage = ">=7.1"
 mypy = ">=1.8"
 ruff = ">=0.2.1"
 
+[tool.poetry.scripts]
+# CLI declaration
+tap-google-analytics = 'tap_google_analytics.tap:TapGoogleAnalytics.cli'
+
 [tool.ruff]
 line-length = 100
 target-version = "py38"
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = [
-  "S101",
+[tool.ruff.lint]
+ignore = [
+    "COM812",
+    "ISC001",
+]
+select = [
+    "F",    # Pyflakes
+    "W",    # pycodestyle (warnings)
+    "E",    # pycodestyle (errors)
+    "C90",  # mccabe
+    "I",    # isort
+    "N",    # pep8-naming
+    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "YTT",  # flake8-2020
+    "S",    # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "FBT",  # flake8-boolean-trap
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "COM",  # flake8-commas
+    "C4",   # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "FA",   # flake8-future-annotations
+    "ISC",  # flake8-implicit-str-concat
+    "G",    # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PT",   # flake8-pytest-style
+    "Q",    # flake8-quotes
+    "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "TCH",  # flake8-type-checking
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "ERA",  # eradicate
+    "PGH",  # pygrep-hooks
+    "PL",   # Pylint
+    "TRY",  # tryceratops
+    "FLY",  # flynt
+    "PERF", # perflint
+    "FURB", # refurb
+    "LOG",  # flake8-logging
+    "RUF",  # Ruff-specific rules
+]
+unfixable = [
+    "ERA",
 ]
 
 [tool.ruff.lint.isort]
-required-imports = [
-  "from __future__ import annotations",
-]
+required-imports = ["from __future__ import annotations"]
 
-[tool.ruff.lint]
-ignore = [
-  "COM812",
-  "ISC001",
-]
-select = [
-  "F",    # Pyflakes
-  "W",    # pycodestyle (warnings)
-  "E",    # pycodestyle (errors)
-  "C90",  # mccabe
-  "I",    # isort
-  "N",    # pep8-naming
-  "D",    # pydocstyle
-  "UP",   # pyupgrade
-  "YTT",  # flake8-2020
-  "S",    # flake8-bandit
-  "BLE",  # flake8-blind-except
-  "FBT",  # flake8-boolean-trap
-  "B",    # flake8-bugbear
-  "A",    # flake8-builtins
-  "COM",  # flake8-commas
-  "C4",   # flake8-comprehensions
-  "DTZ",  # flake8-datetimez
-  "FA",   # flake8-future-annotations
-  "ISC",  # flake8-implicit-str-concat
-  "G",    # flake8-logging-format
-  "INP",  # flake8-no-pep420
-  "PIE",  # flake8-pie
-  "T20",  # flake8-print
-  "PT",   # flake8-pytest-style
-  "Q",    # flake8-quotes
-  "RSE",  # flake8-raise
-  "RET",  # flake8-return
-  "SLF",  # flake8-self
-  "SIM",  # flake8-simplify
-  "TID",  # flake8-tidy-imports
-  "TCH",  # flake8-type-checking
-  "ARG",  # flake8-unused-arguments
-  "PTH",  # flake8-use-pathlib
-  "ERA",  # eradicate
-  "PGH",  # pygrep-hooks
-  "PL",   # Pylint
-  "TRY",  # tryceratops
-  "FLY",  # flynt
-  "PERF", # perflint
-  "FURB", # refurb
-  "LOG",  # flake8-logging
-  "RUF",  # Ruff-specific rules
-]
-unfixable = [
-  "ERA",
-]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
