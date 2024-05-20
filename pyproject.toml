@@ -34,71 +34,71 @@ ruff = ">=0.2.1"
 tap-google-analytics = 'tap_google_analytics.tap:TapGoogleAnalytics.cli'
 
 [tool.ruff]
-line-length = 100
 target-version = "py38"
 
-[tool.ruff.lint]
-ignore = [
+line-length = 100
+lint.select = [
+  "A",    # flake8-builtins
+  "ARG",  # flake8-unused-arguments
+  "B",    # flake8-bugbear
+  "BLE",  # flake8-blind-except
+  "C4",   # flake8-comprehensions
+  "C90",  # mccabe
+  "COM",  # flake8-commas
+  "D",    # pydocstyle
+  "DTZ",  # flake8-datetimez
+  "E",    # pycodestyle (errors)
+  "ERA",  # eradicate
+  "F",    # Pyflakes
+  "FA",   # flake8-future-annotations
+  "FBT",  # flake8-boolean-trap
+  "FLY",  # flynt
+  "FURB", # refurb
+  "G",    # flake8-logging-format
+  "I",    # isort
+  "INP",  # flake8-no-pep420
+  "ISC",  # flake8-implicit-str-concat
+  "LOG",  # flake8-logging
+  "N",    # pep8-naming
+  "PERF", # perflint
+  "PGH",  # pygrep-hooks
+  "PIE",  # flake8-pie
+  "PL",   # Pylint
+  "PT",   # flake8-pytest-style
+  "PTH",  # flake8-use-pathlib
+  "Q",    # flake8-quotes
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "RUF",  # Ruff-specific rules
+  "S",    # flake8-bandit
+  "SIM",  # flake8-simplify
+  "SLF",  # flake8-self
+  "T20",  # flake8-print
+  "TCH",  # flake8-type-checking
+  "TID",  # flake8-tidy-imports
+  "TRY",  # tryceratops
+  "UP",   # pyupgrade
+  "W",    # pycodestyle (warnings)
+  "YTT",  # flake8-2020
+]
+lint.per-file-ignores."tests/*" = [
+  "S101",
+]
+lint.unfixable = [
+  "ERA",
+]
+lint.isort.required-imports = [
+  "from __future__ import annotations",
+]
+lint.pydocstyle.convention = "google"
+lint.ignore = [
   "COM812",
   "ISC001",
 ]
-select = [
-  "F",    # Pyflakes
-  "W",    # pycodestyle (warnings)
-  "E",    # pycodestyle (errors)
-  "C90",  # mccabe
-  "I",    # isort
-  "N",    # pep8-naming
-  "D",    # pydocstyle
-  "UP",   # pyupgrade
-  "YTT",  # flake8-2020
-  "S",    # flake8-bandit
-  "BLE",  # flake8-blind-except
-  "FBT",  # flake8-boolean-trap
-  "B",    # flake8-bugbear
-  "A",    # flake8-builtins
-  "COM",  # flake8-commas
-  "C4",   # flake8-comprehensions
-  "DTZ",  # flake8-datetimez
-  "FA",   # flake8-future-annotations
-  "ISC",  # flake8-implicit-str-concat
-  "G",    # flake8-logging-format
-  "INP",  # flake8-no-pep420
-  "PIE",  # flake8-pie
-  "T20",  # flake8-print
-  "PT",   # flake8-pytest-style
-  "Q",    # flake8-quotes
-  "RSE",  # flake8-raise
-  "RET",  # flake8-return
-  "SLF",  # flake8-self
-  "SIM",  # flake8-simplify
-  "TID",  # flake8-tidy-imports
-  "TCH",  # flake8-type-checking
-  "ARG",  # flake8-unused-arguments
-  "PTH",  # flake8-use-pathlib
-  "ERA",  # eradicate
-  "PGH",  # pygrep-hooks
-  "PL",   # Pylint
-  "TRY",  # tryceratops
-  "FLY",  # flynt
-  "PERF", # perflint
-  "FURB", # refurb
-  "LOG",  # flake8-logging
-  "RUF",  # Ruff-specific rules
-]
-unfixable = [
-  "ERA",
-]
 
-[tool.ruff.lint.isort]
-required-imports = [
-  "from __future__ import annotations",
-]
+
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = [
-  "S101",
-]
+
 
 [tool.ruff.lint.pydocstyle]
-convention = "google"
