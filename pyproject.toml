@@ -95,10 +95,3 @@ lint.ignore = [
   "COM812",
   "ISC001",
 ]
-
-
-
-[tool.ruff.lint.per-file-ignores]
-
-
-[tool.ruff.lint.pydocstyle]
