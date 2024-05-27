@@ -81,6 +81,10 @@ lint.select = [
   "W",    # pycodestyle (warnings)
   "YTT",  # flake8-2020
 ]
+lint.ignore = [
+  "COM812",
+  "ISC001",
+]
 lint.per-file-ignores."tests/*" = [
   "S101",
 ]
@@ -91,7 +95,3 @@ lint.isort.required-imports = [
   "from __future__ import annotations",
 ]
 lint.pydocstyle.convention = "google"
-lint.ignore = [
-  "COM812",
-  "ISC001",
-]
