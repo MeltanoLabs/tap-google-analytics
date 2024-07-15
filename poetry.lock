@@ -472,20 +472,20 @@ scandir = ["scandir (>=1.5,<2.0)"]
 
 [[package]]
 name = "google-analytics-data"
-version = "0.18.8"
+version = "0.18.9"
 description = "Google Analytics Data API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-analytics-data-0.18.8.tar.gz", hash = "sha256:b1f82344d1f5434a025906b2ad2c4a1a53afe6d7ec732e2eb0316e45d70e6f72"},
-    {file = "google_analytics_data-0.18.8-py2.py3-none-any.whl", hash = "sha256:a9150452579ddc04a2e701ca20ba000dda23db578730a1107ec16e1fdb26ba02"},
+    {file = "google-analytics-data-0.18.9.tar.gz", hash = "sha256:51a21fc296331ab995213a002957b249b7b021f5e333c433be6c7f64d9688b54"},
+    {file = "google_analytics_data-0.18.9-py2.py3-none-any.whl", hash = "sha256:32547b2b162bd905c8f002078445479ba42a8ec195d13bca4fb1af794d9d2dfd"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-api-core"
