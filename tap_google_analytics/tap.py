@@ -87,7 +87,12 @@ class TapGoogleAnalytics(Tap):
         th.Property(
             "reports",
             th.StringType,
-            description="Google Analytics Reports Definition",
+            description="Google Analytics Reports Definition as a file path.",
+        ),
+        th.Property(
+            "reports_object",
+            th.ObjectType,
+            description="Google Analytics Reports Definition as a JSON object.",
         ),
         th.Property(
             "end_date",
@@ -145,20 +150,29 @@ class TapGoogleAnalytics(Tap):
         default_reports = Path(__file__).parent.joinpath(
             "defaults", "default_report_definition.json"
         )
+        report_def_path = self.config.get("reports", default_reports)
+        reports_object = self.config.get("reports_object")
 
-        report_def_file = self.config.get("reports", default_reports)
-        if Path(report_def_file).is_file():
-            try:
-                with open(report_def_file) as f:
-                    return json.load(f)
-            except ValueError:
-                self.logger.critical(
-                    f"The JSON definition in '{report_def_file}' has errors"
-                )
-                sys.exit(1)
-        else:
-            self.logger.critical(f"'{report_def_file}' file not found")
+        if report_def_path and reports_object:
+            self.logger.critical(
+                "Both 'reports' and 'reports_object' cannot be provided at the same time."
+            )
             sys.exit(1)
+        elif reports_object:
+            return reports_object
+        else:
+            if Path(report_def_path).is_file():
+                try:
+                    with open(report_def_path) as f:
+                        return json.load(f)
+                except ValueError:
+                    self.logger.critical(
+                        f"The JSON definition in '{report_def_path}' has errors"
+                    )
+                    sys.exit(1)
+            else:
+                self.logger.critical(f"'{report_def_path}' file not found")
+                sys.exit(1)
 
     def _fetch_valid_api_metadata(self) -> Tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
