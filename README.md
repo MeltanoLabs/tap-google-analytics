@@ -22,6 +22,7 @@ Built with the [Meltano SDK](https://sdk.meltano.com) for Singer Taps and Target
 | key_file_location| False    | None    | File Path to Google Analytics Client Secrets |
 | oauth_credentials| False    | None    | Google Analytics OAuth Credentials |
 | reports          | False    | None    | Google Analytics Reports Definition |
+| reports_list        | False    | None    | List of Google Analytics Reports Definitions |
 | end_date         | False    | None    | The last record date to sync |
 
 A full list of supported settings and capabilities is available by running: `tap-google-analytics --about`
@@ -233,6 +234,33 @@ If you want to use the `ga:segment` dimension, you must specify the segment IDs 
 
 Segment IDs can be found with the [GA Query explorer](https://ga-dev-tools.appspot.com/query-explorer). The account configured for authentication must either own the segment, or have "Collaborate" access to the GA view as well as the segment itself having its Segment Availability set to "Collaborators and I can apply/edit Segment in this View".
 
+## reports_list
+
+There may be situations where you won't want to save a file to your meltano directory. For example, if your meltano service is managing multiple user configurations. reports_list allows you to pass in a JSON configuration directly. You can directly pass in a list of reports in a format like below:
+
+```
+[
+  {
+    "name": "acquisition",
+    "dimensions": [
+      "date",
+      "segment",
+      "channelGrouping"
+    ],
+    "metrics": [
+      "users",
+      "newUsers",
+      "sessions"
+    ],
+    "segments": [
+      "gaid::-1",
+      "gaid::U7LSsrWRTq6JIIS8G8brrQ"
+    ]
+  }
+]
+```
+
+
 
 ## Usage
 
@@ -348,5 +376,5 @@ meltano elt tap-google-analytics target-jsonl
 
 ### SDK Dev Guide
 
-See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to 
+See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to
 develop your own taps and targets.
