@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import copy
 import sys
+import typing as t
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Iterable
 
 import backoff
 from google.analytics.data_v1beta.types import (
@@ -18,6 +18,9 @@ from singer_sdk import typing as th
 from singer_sdk.streams import Stream
 
 from tap_google_analytics.error import is_fatal_error
+
+if t.TYPE_CHECKING:
+    from singer_sdk.helpers.types import Context
 
 if sys.version_info < (3, 11):
     from backports.datetime_fromisoformat import MonkeyPatch
@@ -134,11 +137,11 @@ class GoogleAnalyticsStream(Stream):
         return report_definition
 
     def _request_data(
-        self, api_report_def, state_filter: str, next_page_token: Any | None
+        self, api_report_def, state_filter: str, next_page_token: t.Any | None
     ) -> RunReportResponse:
         return self._query_api(api_report_def, state_filter, next_page_token)
 
-    def _get_state_filter(self, context: dict | None) -> str:
+    def _get_state_filter(self, context: Context | None) -> str:
         state = self.get_context_state(context)
         state_bookmark = state.get("replication_key_value") or self.config["start_date"]
         parsed = date.fromisoformat(state_bookmark)
@@ -148,7 +151,7 @@ class GoogleAnalyticsStream(Stream):
         # state bookmarks need to be reformatted for API requests
         return date.strftime(parsed, "%Y-%m-%d")
 
-    def _request_records(self, context: dict | None) -> Iterable[dict]:
+    def _request_records(self, context: Context | None) -> t.Iterable[dict]:
         """Request records from REST endpoint(s), returning response records.
 
         If pagination is detected, pages will be recursed automatically.
@@ -163,7 +166,7 @@ class GoogleAnalyticsStream(Stream):
             RuntimeError: If a loop in pagination is detected. That is, when two
                 consecutive pagination tokens are identical.
         """
-        next_page_token: Any = None
+        next_page_token: t.Any = None
         finished = False
 
         state_filter = self._get_state_filter(context)
@@ -190,7 +193,7 @@ class GoogleAnalyticsStream(Stream):
             # Cycle until get_next_page_token() no longer returns a value
             finished = not next_page_token
 
-    def _get_next_page_token(self, response: RunReportResponse, previous_token) -> Any:
+    def _get_next_page_token(self, response: RunReportResponse, previous_token) -> t.Any:
         """Get the next page token from a response.
 
         Args:
@@ -280,7 +283,7 @@ class GoogleAnalyticsStream(Stream):
         }
         return mapping.get(string_type, th.StringType())
 
-    def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
+    def get_records(self, context: Context | None) -> t.Iterable[dict[str, t.Any]]:
         """Return a generator of row-type dictionary objects.
 
         Each row emitted should be a dictionary of property names to their values.
