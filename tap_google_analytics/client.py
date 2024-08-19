@@ -145,8 +145,7 @@ class GoogleAnalyticsStream(Stream):
         state = self.get_context_state(context)
         state_bookmark = state.get("replication_key_value") or self.config["start_date"]
         parsed = date.fromisoformat(state_bookmark)
-        if parsed < date(2019, 1, 1):
-            parsed = date(2019, 1, 1)
+        parsed = max(parsed, date(2019, 1, 1))
 
         # state bookmarks need to be reformatted for API requests
         return date.strftime(parsed, "%Y-%m-%d")
