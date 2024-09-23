@@ -362,13 +362,13 @@ scandir = ["scandir (>=1.5,<2.0)"]
 
 [[package]]
 name = "google-analytics-data"
-version = "0.18.11"
+version = "0.18.12"
 description = "Google Analytics Data API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_analytics_data-0.18.11-py2.py3-none-any.whl", hash = "sha256:af2c64c230a5e5146511f0b7985b64a68d020372e48f1e7bd7970eea5e2e57bf"},
-    {file = "google_analytics_data-0.18.11.tar.gz", hash = "sha256:5db02e49570a2b9009c44a07ed39d36d805bec715dac9560f4b2e895688c568f"},
+    {file = "google_analytics_data-0.18.12-py2.py3-none-any.whl", hash = "sha256:19554ff542a1566bbbe359304da4c48b09bd8d29ae51600b3bd7b89dbb5a34ee"},
+    {file = "google_analytics_data-0.18.12.tar.gz", hash = "sha256:ee2cefab3b6b5819e314304d862747ad1fbd673f3c73d6f5e1a59dacb9974564"},
 ]
 
 [package.dependencies]
