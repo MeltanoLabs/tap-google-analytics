@@ -4,64 +4,45 @@ name: Test tap-google-analytics
 
 on: [push]
 
+env:
+  FORCE_COLOR: 1
+
 jobs:
   linting:
-    env:
-      POETRY_VERSION: "1.7.1"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # Only lint using the primary version used for dev
-        python-version: ["3.12"]
-
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
+        python-version: 3.x
+    - uses: astral-sh/setup-uv@v3
       with:
-        version: ${{ env.POETRY_VERSION }}
-
-    - name: Install dependencies
-      run: |
-        pipx install tox
-
-    - name: Run lint command from tox.ini
-      run: |
-        tox -e lint
+        version: ">=0.4.18"
+    - run: uvx tox -e lint
 
   pytest:
-
     runs-on: ubuntu-latest
     env:
       CLIENT_SECRETS: ${{ secrets.GA_CLIENT_SECRETS }}
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version:
+        - "3.8"
+        - "3.9"
+        - "3.10"
+        - "3.11"
+        - "3.12"
+        - "3.13"
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
+        allow-prereleases: true
+    - uses: astral-sh/setup-uv@v3
       with:
-        version: ${{ env.POETRY_VERSION }}
-
-    - name: Install dependencies
-      run: |
-        poetry install
-
-    - name: Test with pytest
-      run: |
-        poetry run pytest --capture=no
+        version: ">=0.4.18"
+    - run: uvx tox -e $(echo py${{ matrix.python-version }} | tr -d .)
