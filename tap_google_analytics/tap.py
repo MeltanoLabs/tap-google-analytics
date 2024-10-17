@@ -217,9 +217,9 @@ class TapGoogleAnalytics(Tap):
                 )
                 sys.exit(1)
 
-            if len(dimensions) > 7:  # noqa: PLR2004
+            if len(dimensions) > 9:  # noqa: PLR2004
                 self.logger.critical(
-                    "'%s' has too many dimensions defined. GA reports can have maximum 7 "
+                    "'%s' has too many dimensions defined. GA reports can have maximum 9 "
                     "dimensions.",
                     name,
                 )
