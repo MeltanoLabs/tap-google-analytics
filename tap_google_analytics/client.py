@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import functools
 import sys
 import typing as t
 from datetime import date, datetime, timedelta, timezone
@@ -296,7 +297,7 @@ class GoogleAnalyticsStream(Stream):
         """
         yield from self._request_records(context)
 
-    @property
+    @functools.cached_property
     def schema(self) -> dict:
         """Return dictionary of record schema.
 
