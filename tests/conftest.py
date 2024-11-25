@@ -11,7 +11,7 @@ from tests.utilities import get_secrets_dict
 
 
 @pytest.fixture(scope="module")
-def config():  # noqa: PT004
+def config():
     """Write secrets file then clean it up after tests."""
     secrets_path = Path("tests/test_data/client_secrets.json")
     with secrets_path.open("w") as f:

@@ -67,7 +67,7 @@ class GoogleAnalyticsStream(Stream):
         # We always treat them as strings as we can not be sure of
         # their data type
         if (
-            attribute.startswith("goal")
+            (attribute.startswith("goal"))
             and attribute.endswith(
                 (
                     "Starts",
@@ -78,8 +78,7 @@ class GoogleAnalyticsStream(Stream):
                     "AbandonRate",
                 )
             )
-            or attribute.startswith(("metric", "calcMetric"))
-        ):
+        ) or attribute.startswith(("metric", "calcMetric")):
             return "string"
 
         if attribute in metrics_ref:
