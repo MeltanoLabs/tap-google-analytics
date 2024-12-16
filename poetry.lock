@@ -406,13 +406,13 @@ tqdm = ["tqdm"]
 
 [[package]]
 name = "google-analytics-data"
-version = "0.18.15"
+version = "0.18.16"
 description = "Google Analytics Data API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_analytics_data-0.18.15-py2.py3-none-any.whl", hash = "sha256:5ae41c5911de6e0532402e93a16dccdff04b158afc19912a6ef09e563da2c894"},
-    {file = "google_analytics_data-0.18.15.tar.gz", hash = "sha256:76b422617fb136d163d4ce77e4426f4990854b7d0c8bc552d628f7832f9afa96"},
+    {file = "google_analytics_data-0.18.16-py2.py3-none-any.whl", hash = "sha256:70f10cb82e98178ee22089b936eb01f6ae01cadcce9cfc166ed2dea18fa73881"},
+    {file = "google_analytics_data-0.18.16.tar.gz", hash = "sha256:448bb79a1dade65a36633d835b48eb629219828bd1b90b1501d76e9a40478f26"},
 ]
 
 [package.dependencies]
