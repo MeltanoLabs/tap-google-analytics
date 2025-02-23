@@ -69,6 +69,15 @@ def error_reason(e):
 LOGGER = logging.getLogger("googleapiclient.discovery_cache")
 LOGGER.setLevel(logging.ERROR)
 
+def is_quota_error(error):
+    """Return True if error is related to quota exhaustion."""
+    reason = error_reason(error)
+    error_message = str(error).lower()
+    
+    # Check both the reason code and error message content
+    return (reason in ["quotaExceeded", "dailyQuotaExceeded", "userRateLimitExceeded"] or
+            "exhausted property tokens" in error_message or
+            "quota exceeded" in error_message)
 
 def is_fatal_error(error):
     """Return a boolean value depending on if its a fatal error or not."""
