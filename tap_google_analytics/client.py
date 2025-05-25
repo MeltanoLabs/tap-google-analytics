@@ -178,7 +178,8 @@ class GoogleAnalyticsStream(Stream):
         
         # Only apply lookback window if we have a state bookmark
         if state.get("replication_key_value"):
-            parsed = parsed - timedelta(days=30)
+            lookback_window = self.config.get("lookback_window", 30)
+            parsed = parsed - timedelta(days=lookback_window)
         
         # state bookmarks need to be reformatted for API requests
         return date.strftime(parsed, "%Y-%m-%d")
