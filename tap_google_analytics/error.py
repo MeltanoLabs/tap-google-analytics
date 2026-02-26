@@ -7,6 +7,13 @@ import json
 import logging
 import socket
 
+try:
+    from google.api_core.exceptions import PermissionDenied as GooglePermissionDenied
+except ImportError:
+    # Fallback so no exception is ever considered PermissionDenied
+    class GooglePermissionDenied(Exception):
+        pass
+
 
 class TapGaApiError(Exception):
     """Base exception for API errors."""
@@ -69,6 +76,16 @@ def error_reason(e):
 LOGGER = logging.getLogger("googleapiclient.discovery_cache")
 LOGGER.setLevel(logging.ERROR)
 
+def is_permission_denied_error(error):
+    """Return True if error indicates lack of access to a GA property."""
+    if isinstance(error, GooglePermissionDenied):
+        return True
+    if isinstance(error, RuntimeError):
+        msg = str(error).lower()
+        return "property id" in msg and "permission" in msg
+    return False
+
+
 def is_quota_error(error):
     """Return True if error is related to quota exhaustion."""
     reason = error_reason(error)
@@ -84,7 +101,10 @@ def is_fatal_error(error):
     if isinstance(error, socket.timeout):
         return False
 
-    status = error.code if error.message is not None else None
+    # Google API exceptions have .message and .code; plain exceptions (e.g. RuntimeError)
+    # do not - use getattr to avoid AttributeError.
+    message = getattr(error, "message", None)
+    status = getattr(error, "code", None) if message is not None else None
     if status in [500, 503]:
         return False
 

@@ -21,6 +21,7 @@ from singer_sdk import typing as th  # JSON schema typing helpers
 from datetime import datetime, timedelta, timezone
 
 from tap_google_analytics.client import GoogleAnalyticsStream
+from tap_google_analytics.error import is_permission_denied_error
 
 SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
 
@@ -175,6 +176,10 @@ class TapGoogleAnalytics(Tap):
     def _fetch_valid_api_metadata(self) -> tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
 
+        Tries each configured property in turn; skips properties without access
+        and uses the first one that succeeds. Metadata is the same for all GA4
+        properties.
+
         Returns:
           A map of (dimensions, metrics) hashes
 
@@ -185,27 +190,48 @@ class TapGoogleAnalytics(Tap):
             as the value. e.g. metrics['sessions'] == INTEGER
 
         """
-        property_id = None
+        property_ids = []
         if self.config.get("property_ids"):
-            property_id = self.config["property_ids"].split(",")[0].strip()
-        elif self.config.get("property_id"):
-            property_id = self.config["property_id"]
-        
-        if not property_id:
+            property_ids = [pid.strip() for pid in self.config["property_ids"].split(",")]
+        if self.config.get("property_id"):
+            pid = self.config["property_id"].strip()
+            if pid not in property_ids:
+                property_ids.append(pid)
+        if not property_ids:
             raise RuntimeError("No valid property ID provided")
 
-        request = GetMetadataRequest(name=f"properties/{property_id}/metadata")
-        results = self.analytics.get_metadata(request)
+        last_error = None
+        for property_id in property_ids:
+            request = GetMetadataRequest(name=f"properties/{property_id}/metadata")
+            try:
+                results = self.analytics.get_metadata(request)
+            except Exception as e:
+                last_error = e
+                if is_permission_denied_error(e):
+                    self.logger.warning(
+                        "Skipping property ID %s (no access): %s",
+                        property_id,
+                        e,
+                    )
+                    continue
+                raise RuntimeError(
+                    f"Property ID '{property_id}': {e}"
+                ) from e
 
-        LOGGER.debug("**** metadata for %s", property_id)
-        LOGGER.debug(results)
+            LOGGER.debug("**** metadata for %s", property_id)
+            LOGGER.debug(results)
 
-        metrics = {
-            metric.api_name: metric.type_.name.replace("TYPE_", "").lower()
-            for metric in results.metrics
-        }
-        dimensions = {dimension.api_name: "string" for dimension in results.dimensions}
-        return dimensions, metrics
+            metrics = {
+                metric.api_name: metric.type_.name.replace("TYPE_", "").lower()
+                for metric in results.metrics
+            }
+            dimensions = {dimension.api_name: "string" for dimension in results.dimensions}
+            return dimensions, metrics
+
+        raise RuntimeError(
+            "No property accessible. Tried: %s. Last error: %s"
+            % (", ".join(property_ids), last_error)
+        )
 
     def _validate_report_def(self, reports_definition):
         for report in reports_definition:

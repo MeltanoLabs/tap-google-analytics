@@ -20,7 +20,8 @@ from singer_sdk import typing as th
 from singer_sdk.streams import Stream
 
 from tap_google_analytics.error import is_fatal_error
-from tap_google_analytics.error import is_quota_error 
+from tap_google_analytics.error import is_permission_denied_error
+from tap_google_analytics.error import is_quota_error
 from tap_google_analytics.quota_manager import QuotaManager
 if t.TYPE_CHECKING:
     from singer_sdk.helpers.types import Context
@@ -212,32 +213,42 @@ class GoogleAnalyticsStream(Stream):
         state_filter = self._get_state_filter(context)
         api_report_def = self._generate_report_definition(self.report)
 
-        # Fetch data for each property
+        # Fetch data for each property; skip properties we no longer have access to
         for property_id in property_ids:
             self.property_id = property_id  # Set current property_id for API calls
             next_page_token: t.Any = None
             finished = False
 
-            while not finished:
-                resp = self._request_data(
-                    api_report_def,
-                    state_filter=state_filter,
-                    next_page_token=next_page_token,
-                )
-
-                yield from self._parse_response(resp)
-
-                previous_token = copy.deepcopy(next_page_token)
-                next_page_token = self._get_next_page_token(
-                    response=resp, previous_token=previous_token
-                )
-                if next_page_token and next_page_token == previous_token:
-                    msg = (
-                        f"Loop detected in pagination. "
-                        f"Pagination token {next_page_token} is identical to prior token."
+            try:
+                while not finished:
+                    resp = self._request_data(
+                        api_report_def,
+                        state_filter=state_filter,
+                        next_page_token=next_page_token,
                     )
-                    raise RuntimeError(msg)
-                finished = not next_page_token
+
+                    yield from self._parse_response(resp)
+
+                    previous_token = copy.deepcopy(next_page_token)
+                    next_page_token = self._get_next_page_token(
+                        response=resp, previous_token=previous_token
+                    )
+                    if next_page_token and next_page_token == previous_token:
+                        msg = (
+                            f"Loop detected in pagination. "
+                            f"Pagination token {next_page_token} is identical to prior token."
+                        )
+                        raise RuntimeError(msg)
+                    finished = not next_page_token
+            except Exception as e:
+                if is_permission_denied_error(e):
+                    self.logger.warning(
+                        "Skipping property ID %s (no access): %s",
+                        property_id,
+                        e,
+                    )
+                    continue
+                raise
 
     def _get_next_page_token(self, response: RunReportResponse, previous_token) -> t.Any:
         """Get the next page token from a response.
@@ -347,7 +358,9 @@ class GoogleAnalyticsStream(Stream):
                     )
                     self.quota_manager.wait_for_quota_reset()
                     continue
-                raise
+                raise RuntimeError(
+                    f"Property ID '{self.property_id}': {e}"
+                ) from e
 
     @staticmethod
     def _get_datatype(string_type):
