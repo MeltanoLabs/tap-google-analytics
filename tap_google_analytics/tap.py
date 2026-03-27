@@ -39,8 +39,8 @@ class ProxyOAuthCredentials(OAuthCredentials):
     def __init__(
         self,
         token: str | None,
-        refresh_token: str,
-        refresh_proxy_url: str,
+        refresh_token: str | None,
+        refresh_proxy_url: str | None,
         refresh_proxy_url_auth: str | None,
     ):
         def refresh_handler(request: Request, scopes):
@@ -107,6 +107,7 @@ class TapGoogleAnalytics(Tap):
                 th.Property(
                     "refresh_token",
                     th.StringType,
+                    title="Refresh Proxy URL",
                     description="Google Analytics Refresh Token",
                 ),
                 th.Property(
@@ -158,26 +159,26 @@ class TapGoogleAnalytics(Tap):
         ),
     ).to_dict()
 
-    # def _initialize_credentials(self):
-    #     if self.config.get("oauth_credentials"):
-    #         return OAuthCredentials.from_authorized_user_info(
-    #             {
-    #                 "client_id": self.config["oauth_credentials"]["client_id"],
-    #                 "client_secret": self.config["oauth_credentials"]["client_secret"],
-    #                 "refresh_token": self.config["oauth_credentials"]["refresh_token"],
-    #             }
-    #         )
+    def _initialize_credentials(self):
+        if self.config.get("oauth_credentials"):
+            return OAuthCredentials.from_authorized_user_info(
+                {
+                    "client_id": self.config["oauth_credentials"]["client_id"],
+                    "client_secret": self.config["oauth_credentials"]["client_secret"],
+                    "refresh_token": self.config["oauth_credentials"]["refresh_token"],
+                }
+            )
 
-    #     if self.config.get("key_file_location"):
-    #         with open(self.config["key_file_location"]) as f:  # noqa: PTH123
-    #             return service_account.Credentials.from_service_account_info(json.load(f))
+        if self.config.get("key_file_location"):
+            with open(self.config["key_file_location"]) as f:  # noqa: PTH123
+                return service_account.Credentials.from_service_account_info(json.load(f))
 
-    #     if self.config.get("client_secrets"):
-    #         return service_account.Credentials.from_service_account_info(
-    #             self.config["client_secrets"]
-    #         )
+        if self.config.get("client_secrets"):
+            return service_account.Credentials.from_service_account_info(
+                self.config["client_secrets"]
+            )
 
-    #     raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
+        raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
 
     def _get_credentials(self) -> OAuthCredentials:
         oauth_credentials: dict | None = self.config.get("oauth_credentials")
@@ -185,8 +186,8 @@ class TapGoogleAnalytics(Tap):
         if oauth_credentials:
             return ProxyOAuthCredentials(
                 token=oauth_credentials.get("access_token"),
-                refresh_token=oauth_credentials["refresh_token"],
-                refresh_proxy_url=oauth_credentials["refresh_proxy_url"],
+                refresh_token=oauth_credentials.get("refresh_token"),
+                refresh_proxy_url=oauth_credentials.get("refresh_proxy_url"),
                 refresh_proxy_url_auth=oauth_credentials.get(
                     "refresh_proxy_url_auth"),
             )
