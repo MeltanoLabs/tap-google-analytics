@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 import json
-import os
 import logging
+import os
 import sys
-from pathlib import Path
 from datetime import datetime, timedelta
 from http import HTTPStatus
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import GetMetadataRequest
+from google.auth import exceptions
 
 # OAuth - Google Analytics Authorization
 # from google.oauth2.credentials import Credentials as ServiceAccountCredentials  # noqa: ERA001
@@ -20,12 +21,10 @@ from google.oauth2 import service_account
 
 # Service Account - Google Analytics Authorization
 from google.oauth2.credentials import Credentials as OAuthCredentials
-from google.auth import exceptions
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 
 from tap_google_analytics.client import GoogleAnalyticsStream
-
 
 if TYPE_CHECKING:
     from google.auth.transport import Request, Response
@@ -169,7 +168,7 @@ class TapGoogleAnalytics(Tap):
     #         )
 
     #     if self.config.get("key_file_location"):
-    #         with open(self.config["key_file_location"]) as f:  # noqa: PTH123
+    #         with open(self.config["key_file_location"]) as f:
     #             return service_account.Credentials.from_service_account_info(json.load(f))
 
     #     if self.config.get("client_secrets"):
@@ -177,7 +176,7 @@ class TapGoogleAnalytics(Tap):
     #             self.config["client_secrets"]
     #         )
 
-    #     raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
+    #     raise RuntimeError("No valid credentials provided.")
 
     def _get_credentials(self) -> OAuthCredentials:
         oauth_credentials: dict | None = self.config.get("oauth_credentials")
@@ -187,8 +186,7 @@ class TapGoogleAnalytics(Tap):
                 token=oauth_credentials.get("access_token"),
                 refresh_token=oauth_credentials["refresh_token"],
                 refresh_proxy_url=oauth_credentials["refresh_proxy_url"],
-                refresh_proxy_url_auth=oauth_credentials.get(
-                    "refresh_proxy_url_auth"),
+                refresh_proxy_url_auth=oauth_credentials.get("refresh_proxy_url_auth"),
             )
 
         client_secrets_raw = self.config["client_secrets"]
@@ -226,8 +224,7 @@ class TapGoogleAnalytics(Tap):
                 with open(report_def_file) as f:  # noqa: PTH123
                     return json.load(f)
             except ValueError:
-                self.logger.critical(
-                    "The JSON definition in '%s' has errors", report_def_file)
+                self.logger.critical("The JSON definition in '%s' has errors", report_def_file)
                 sys.exit(1)
         else:
             self.logger.critical("'%s' file not found", report_def_file)
@@ -246,8 +243,7 @@ class TapGoogleAnalytics(Tap):
             as the value. e.g. metrics['sessions'] == INTEGER
 
         """
-        request = GetMetadataRequest(
-            name=f"properties/{self.config['property_id']}/metadata")
+        request = GetMetadataRequest(name=f"properties/{self.config['property_id']}/metadata")
         results = self.analytics.get_metadata(request)
 
         prop_id = self.config["property_id"]
@@ -258,8 +254,7 @@ class TapGoogleAnalytics(Tap):
             metric.api_name: metric.type_.name.replace("TYPE_", "").lower()
             for metric in results.metrics
         }
-        dimensions = {
-            dimension.api_name: "string" for dimension in results.dimensions}
+        dimensions = {dimension.api_name: "string" for dimension in results.dimensions}
         return dimensions, metrics
 
     def _validate_report_def(self, reports_definition):
@@ -309,8 +304,7 @@ class TapGoogleAnalytics(Tap):
         # check that all the dimensions are proper Google Analytics Dimensions
         for dimension in dimensions:
             if dimension not in self.dimensions_ref:
-                self.logger.critical(
-                    "'%s' is not a valid Google Analytics dimension", dimension)
+                self.logger.critical("'%s' is not a valid Google Analytics dimension", dimension)
                 self.logger.info(
                     "For details see https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema"
                 )
@@ -337,8 +331,7 @@ class TapGoogleAnalytics(Tap):
                 continue
 
             if not metric.startswith(("metric", "calcMetric")) and metric not in self.metrics_ref:
-                self.logger.critical(
-                    "'%s' is not a valid Google Analytics metric", metric)
+                self.logger.critical("'%s' is not a valid Google Analytics metric", metric)
                 self.logger.info(
                     "For details see https://ga-dev-tools.google/ga4/\
                         dimensions-metrics-explorer/"
