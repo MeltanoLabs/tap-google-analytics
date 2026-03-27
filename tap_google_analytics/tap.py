@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 import json
-import os
 import logging
+import os
 import sys
-from pathlib import Path
 from datetime import datetime, timedelta
 from http import HTTPStatus
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import GetMetadataRequest
+from google.auth import exceptions
 
 # OAuth - Google Analytics Authorization
 # from google.oauth2.credentials import Credentials as ServiceAccountCredentials  # noqa: ERA001
@@ -20,12 +21,10 @@ from google.oauth2 import service_account
 
 # Service Account - Google Analytics Authorization
 from google.oauth2.credentials import Credentials as OAuthCredentials
-from google.auth import exceptions
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 
 from tap_google_analytics.client import GoogleAnalyticsStream
-
 
 if TYPE_CHECKING:
     from google.auth.transport import Request, Response
