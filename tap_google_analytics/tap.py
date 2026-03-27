@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 import logging
 import sys
 from pathlib import Path
+from datetime import datetime, timedelta
+from http import HTTPStatus
+from typing import TYPE_CHECKING
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import GetMetadataRequest
@@ -16,14 +20,55 @@ from google.oauth2 import service_account
 
 # Service Account - Google Analytics Authorization
 from google.oauth2.credentials import Credentials as OAuthCredentials
+from google.auth import exceptions
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 
 from tap_google_analytics.client import GoogleAnalyticsStream
 
+
+if TYPE_CHECKING:
+    from google.auth.transport import Request, Response
+
 SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
 
 LOGGER = logging.getLogger(__name__)
+
+
+class ProxyOAuthCredentials(OAuthCredentials):
+    def __init__(
+        self,
+        token: str | None,
+        refresh_token: str,
+        refresh_proxy_url: str,
+        refresh_proxy_url_auth: str | None,
+    ):
+        def refresh_handler(request: Request, scopes):
+            response: Response = request(
+                refresh_proxy_url,
+                method="POST",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": refresh_proxy_url_auth,
+                },
+                body=json.dumps(
+                    {
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token,
+                    }
+                ),
+            )
+
+            if response.status != HTTPStatus.OK:
+                raise exceptions.RefreshError(response.data)
+
+            data: dict = json.loads(response.data)
+            access_token = data["access_token"]
+            expiry = datetime.now() + timedelta(seconds=data["expires_in"])
+
+            return access_token, expiry
+
+        super().__init__(token, refresh_handler=refresh_handler)
 
 
 class TapGoogleAnalytics(Tap):
@@ -113,26 +158,50 @@ class TapGoogleAnalytics(Tap):
         ),
     ).to_dict()
 
-    def _initialize_credentials(self):
-        if self.config.get("oauth_credentials"):
-            return OAuthCredentials.from_authorized_user_info(
-                {
-                    "client_id": self.config["oauth_credentials"]["client_id"],
-                    "client_secret": self.config["oauth_credentials"]["client_secret"],
-                    "refresh_token": self.config["oauth_credentials"]["refresh_token"],
-                }
+    # def _initialize_credentials(self):
+    #     if self.config.get("oauth_credentials"):
+    #         return OAuthCredentials.from_authorized_user_info(
+    #             {
+    #                 "client_id": self.config["oauth_credentials"]["client_id"],
+    #                 "client_secret": self.config["oauth_credentials"]["client_secret"],
+    #                 "refresh_token": self.config["oauth_credentials"]["refresh_token"],
+    #             }
+    #         )
+
+    #     if self.config.get("key_file_location"):
+    #         with open(self.config["key_file_location"]) as f:  # noqa: PTH123
+    #             return service_account.Credentials.from_service_account_info(json.load(f))
+
+    #     if self.config.get("client_secrets"):
+    #         return service_account.Credentials.from_service_account_info(
+    #             self.config["client_secrets"]
+    #         )
+
+    #     raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
+
+    def _get_credentials(self) -> OAuthCredentials:
+        oauth_credentials: dict | None = self.config.get("oauth_credentials")
+
+        if oauth_credentials:
+            return ProxyOAuthCredentials(
+                token=oauth_credentials.get("access_token"),
+                refresh_token=oauth_credentials["refresh_token"],
+                refresh_proxy_url=oauth_credentials["refresh_proxy_url"],
+                refresh_proxy_url_auth=oauth_credentials.get(
+                    "refresh_proxy_url_auth"),
             )
 
-        if self.config.get("key_file_location"):
-            with open(self.config["key_file_location"]) as f:  # noqa: PTH123
-                return service_account.Credentials.from_service_account_info(json.load(f))
+        client_secrets_raw = self.config["client_secrets"]
+        if os.path.isfile(client_secrets_raw):  # noqa: PTH113
+            with open(client_secrets_raw) as f:  # noqa: PTH123
+                client_secrets = json.load(f)
+        else:
+            client_secrets = json.loads(client_secrets_raw)
 
-        if self.config.get("client_secrets"):
-            return service_account.Credentials.from_service_account_info(
-                self.config["client_secrets"]
-            )
-
-        raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
+        return service_account.Credentials.from_service_account_info(
+            client_secrets,
+            scopes=SCOPES,
+        )
 
     def _initialize_analytics(self):
         """Initialize an Analytics Reporting API V4 service object.
@@ -157,7 +226,8 @@ class TapGoogleAnalytics(Tap):
                 with open(report_def_file) as f:  # noqa: PTH123
                     return json.load(f)
             except ValueError:
-                self.logger.critical("The JSON definition in '%s' has errors", report_def_file)
+                self.logger.critical(
+                    "The JSON definition in '%s' has errors", report_def_file)
                 sys.exit(1)
         else:
             self.logger.critical("'%s' file not found", report_def_file)
@@ -176,7 +246,8 @@ class TapGoogleAnalytics(Tap):
             as the value. e.g. metrics['sessions'] == INTEGER
 
         """
-        request = GetMetadataRequest(name=f"properties/{self.config['property_id']}/metadata")
+        request = GetMetadataRequest(
+            name=f"properties/{self.config['property_id']}/metadata")
         results = self.analytics.get_metadata(request)
 
         prop_id = self.config["property_id"]
@@ -187,7 +258,8 @@ class TapGoogleAnalytics(Tap):
             metric.api_name: metric.type_.name.replace("TYPE_", "").lower()
             for metric in results.metrics
         }
-        dimensions = {dimension.api_name: "string" for dimension in results.dimensions}
+        dimensions = {
+            dimension.api_name: "string" for dimension in results.dimensions}
         return dimensions, metrics
 
     def _validate_report_def(self, reports_definition):
@@ -237,7 +309,8 @@ class TapGoogleAnalytics(Tap):
         # check that all the dimensions are proper Google Analytics Dimensions
         for dimension in dimensions:
             if dimension not in self.dimensions_ref:
-                self.logger.critical("'%s' is not a valid Google Analytics dimension", dimension)
+                self.logger.critical(
+                    "'%s' is not a valid Google Analytics dimension", dimension)
                 self.logger.info(
                     "For details see https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema"
                 )
@@ -264,7 +337,8 @@ class TapGoogleAnalytics(Tap):
                 continue
 
             if not metric.startswith(("metric", "calcMetric")) and metric not in self.metrics_ref:
-                self.logger.critical("'%s' is not a valid Google Analytics metric", metric)
+                self.logger.critical(
+                    "'%s' is not a valid Google Analytics metric", metric)
                 self.logger.info(
                     "For details see https://ga-dev-tools.google/ga4/\
                         dimensions-metrics-explorer/"
@@ -273,7 +347,7 @@ class TapGoogleAnalytics(Tap):
 
     def _custom_initialization(self):
         # init GA client
-        self.credentials = self._initialize_credentials()
+        self.credentials = self._get_credentials()
         self.analytics = self._initialize_analytics()
         # load and validate reports
         self.dimensions_ref, self.metrics_ref = self._fetch_valid_api_metadata()
