@@ -196,23 +196,11 @@ class TapGoogleAnalytics(Tap):
 
         if self.config.get("key_file_location"):
             with open(self.config["key_file_location"]) as f:  # noqa: PTH123
-                return service_account.Credentials.from_service_account_info(
-                    json.load(f),
-                    scopes=SCOPES,
-                )
+                return service_account.Credentials.from_service_account_info(json.load(f))
 
-        client_secrets = self.config.get("client_secrets")
-        if client_secrets:
-            if isinstance(client_secrets, str):
-                if os.path.isfile(client_secrets):  # noqa: PTH113
-                    with open(client_secrets) as f:  # noqa: PTH123
-                        client_secrets = json.load(f)
-                else:
-                    client_secrets = json.loads(client_secrets)
-
+        if self.config.get("client_secrets"):
             return service_account.Credentials.from_service_account_info(
-                client_secrets,
-                scopes=SCOPES,
+                self.config["client_secrets"]
             )
 
         raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
