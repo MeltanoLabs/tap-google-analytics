@@ -47,7 +47,10 @@ class ProxyOAuthCredentials(OAuthCredentials):
 
         def refresh_handler(request: Request, scopes):  # noqa: ARG001
             if not refresh_proxy_url or not refresh_token:
-                msg = "Insufficient config for proxy token refresh - 'refresh_proxy_url' and 'refresh_token' required"
+                msg = (
+                    "Insufficient config for proxy token refresh - "
+                    "'refresh_proxy_url' and 'refresh_token' required"
+                )
                 raise ValueError(msg)
 
             response: Response = request(
