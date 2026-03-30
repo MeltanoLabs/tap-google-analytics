@@ -6,9 +6,8 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from singer_sdk.testing import get_standard_tap_tests
-
 from google.oauth2.credentials import Credentials as OAuthCredentials
+from singer_sdk.testing import get_standard_tap_tests
 
 from tap_google_analytics.tap import ProxyOAuthCredentials, TapGoogleAnalytics
 from tests.utilities import get_secrets_dict
@@ -60,9 +59,7 @@ def test_initialize_credentials_returns_proxy_oauth_credentials():
     tap = TapGoogleAnalytics(
         config={
             "property_id": "312647579",
-            "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime(
-                "%Y-%m-%d"
-            ),
+            "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
             "oauth_credentials": {
                 "refresh_token": "refresh-token",
                 "refresh_proxy_url": "https://example.com/oauth/token",
@@ -84,9 +81,7 @@ def test_initialize_credentials_returns_google_oauth_credentials():
     tap = TapGoogleAnalytics(
         config={
             "property_id": "312647579",
-            "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime(
-                "%Y-%m-%d"
-            ),
+            "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d"),
             "oauth_credentials": {
                 "client_id": "client-id",
                 "client_secret": "client-secret",
