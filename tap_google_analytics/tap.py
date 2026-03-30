@@ -46,7 +46,6 @@ class ProxyOAuthCredentials(OAuthCredentials):
         """Initialize credentials that delegate token refresh to a proxy service."""
 
         def refresh_handler(request: Request, scopes):  # noqa: ARG001
-
             if not refresh_proxy_url or not refresh_token:
                 msg = "Insufficient config for proxy token refresh - 'refresh_proxy_url' and 'refresh_token' required"
                 raise ValueError(msg)
@@ -71,8 +70,7 @@ class ProxyOAuthCredentials(OAuthCredentials):
 
             data: dict = json.loads(response.data)
             access_token = data["access_token"]
-            expiry = datetime.now(timezone.utc) + \
-                timedelta(seconds=data["expires_in"])
+            expiry = datetime.now(timezone.utc) + timedelta(seconds=data["expires_in"])
 
             return access_token, expiry
 
@@ -188,10 +186,8 @@ class TapGoogleAnalytics(Tap):
                 return ProxyOAuthCredentials(
                     token=oauth_credentials.get("access_token"),
                     refresh_token=oauth_credentials.get("refresh_token"),
-                    refresh_proxy_url=oauth_credentials.get(
-                        "refresh_proxy_url"),
-                    refresh_proxy_url_auth=oauth_credentials.get(
-                        "refresh_proxy_url_auth"),
+                    refresh_proxy_url=oauth_credentials.get("refresh_proxy_url"),
+                    refresh_proxy_url_auth=oauth_credentials.get("refresh_proxy_url_auth"),
                 )
 
             return OAuthCredentials.from_authorized_user_info(
@@ -236,8 +232,7 @@ class TapGoogleAnalytics(Tap):
                 with open(report_def_file) as f:  # noqa: PTH123
                     return json.load(f)
             except ValueError:
-                self.logger.critical(
-                    "The JSON definition in '%s' has errors", report_def_file)
+                self.logger.critical("The JSON definition in '%s' has errors", report_def_file)
                 sys.exit(1)
         else:
             self.logger.critical("'%s' file not found", report_def_file)
@@ -256,8 +251,7 @@ class TapGoogleAnalytics(Tap):
             as the value. e.g. metrics['sessions'] == INTEGER
 
         """
-        request = GetMetadataRequest(
-            name=f"properties/{self.config['property_id']}/metadata")
+        request = GetMetadataRequest(name=f"properties/{self.config['property_id']}/metadata")
         results = self.analytics.get_metadata(request)
 
         prop_id = self.config["property_id"]
@@ -268,8 +262,7 @@ class TapGoogleAnalytics(Tap):
             metric.api_name: metric.type_.name.replace("TYPE_", "").lower()
             for metric in results.metrics
         }
-        dimensions = {
-            dimension.api_name: "string" for dimension in results.dimensions}
+        dimensions = {dimension.api_name: "string" for dimension in results.dimensions}
         return dimensions, metrics
 
     def _validate_report_def(self, reports_definition):
@@ -319,8 +312,7 @@ class TapGoogleAnalytics(Tap):
         # check that all the dimensions are proper Google Analytics Dimensions
         for dimension in dimensions:
             if dimension not in self.dimensions_ref:
-                self.logger.critical(
-                    "'%s' is not a valid Google Analytics dimension", dimension)
+                self.logger.critical("'%s' is not a valid Google Analytics dimension", dimension)
                 self.logger.info(
                     "For details see https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema"
                 )
@@ -347,8 +339,7 @@ class TapGoogleAnalytics(Tap):
                 continue
 
             if not metric.startswith(("metric", "calcMetric")) and metric not in self.metrics_ref:
-                self.logger.critical(
-                    "'%s' is not a valid Google Analytics metric", metric)
+                self.logger.critical("'%s' is not a valid Google Analytics metric", metric)
                 self.logger.info(
                     "For details see https://ga-dev-tools.google/ga4/\
                         dimensions-metrics-explorer/"
