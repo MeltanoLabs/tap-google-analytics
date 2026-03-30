@@ -119,6 +119,21 @@ class TapGoogleAnalytics(Tap):
                     th.StringType,
                     description="Google Analytics Client Secret",
                 ),
+                th.Property(
+                    "access_token",
+                    th.StringType,
+                    description="Google Analytics Access Token",
+                ),
+                th.Property(
+                    "refresh_proxy_url",
+                    th.StringType,
+                    description="Proxy endpoint used to refresh Google Analytics tokens",
+                ),
+                th.Property(
+                    "refresh_proxy_url_auth",
+                    th.StringType,
+                    description="Authorization header value for the refresh proxy endpoint",
+                ),
             ),
             description="Google Analytics OAuth Credentials",
         ),
@@ -159,49 +174,46 @@ class TapGoogleAnalytics(Tap):
     ).to_dict()
 
     def _initialize_credentials(self):
-        if self.config.get("oauth_credentials"):
+        oauth_credentials: dict | None = self.config.get("oauth_credentials")
+        if oauth_credentials:
+            if oauth_credentials.get("refresh_proxy_url"):
+                return ProxyOAuthCredentials(
+                    token=oauth_credentials.get("access_token"),
+                    refresh_token=oauth_credentials.get("refresh_token"),
+                    refresh_proxy_url=oauth_credentials.get("refresh_proxy_url"),
+                    refresh_proxy_url_auth=oauth_credentials.get("refresh_proxy_url_auth"),
+                )
+
             return OAuthCredentials.from_authorized_user_info(
                 {
-                    "client_id": self.config["oauth_credentials"]["client_id"],
-                    "client_secret": self.config["oauth_credentials"]["client_secret"],
-                    "refresh_token": self.config["oauth_credentials"]["refresh_token"],
+                    "client_id": oauth_credentials["client_id"],
+                    "client_secret": oauth_credentials["client_secret"],
+                    "refresh_token": oauth_credentials["refresh_token"],
                 }
             )
 
         if self.config.get("key_file_location"):
             with open(self.config["key_file_location"]) as f:  # noqa: PTH123
-                return service_account.Credentials.from_service_account_info(json.load(f))
+                return service_account.Credentials.from_service_account_info(
+                    json.load(f),
+                    scopes=SCOPES,
+                )
 
-        if self.config.get("client_secrets"):
+        client_secrets = self.config.get("client_secrets")
+        if client_secrets:
+            if isinstance(client_secrets, str):
+                if os.path.isfile(client_secrets):  # noqa: PTH113
+                    with open(client_secrets) as f:  # noqa: PTH123
+                        client_secrets = json.load(f)
+                else:
+                    client_secrets = json.loads(client_secrets)
+
             return service_account.Credentials.from_service_account_info(
-                self.config["client_secrets"]
+                client_secrets,
+                scopes=SCOPES,
             )
 
         raise RuntimeError("No valid credentials provided.")  # noqa: TRY003
-
-    def _get_credentials(self) -> OAuthCredentials:
-        oauth_credentials: dict | None = self.config.get("oauth_credentials")
-
-        if oauth_credentials:
-            return ProxyOAuthCredentials(
-                token=oauth_credentials.get("access_token"),
-                refresh_token=oauth_credentials.get("refresh_token"),
-                refresh_proxy_url=oauth_credentials.get("refresh_proxy_url"),
-                refresh_proxy_url_auth=oauth_credentials.get(
-                    "refresh_proxy_url_auth"),
-            )
-
-        client_secrets_raw = self.config["client_secrets"]
-        if os.path.isfile(client_secrets_raw):  # noqa: PTH113
-            with open(client_secrets_raw) as f:  # noqa: PTH123
-                client_secrets = json.load(f)
-        else:
-            client_secrets = json.loads(client_secrets_raw)
-
-        return service_account.Credentials.from_service_account_info(
-            client_secrets,
-            scopes=SCOPES,
-        )
 
     def _initialize_analytics(self):
         """Initialize an Analytics Reporting API V4 service object.
@@ -347,7 +359,7 @@ class TapGoogleAnalytics(Tap):
 
     def _custom_initialization(self):
         # init GA client
-        self.credentials = self._get_credentials()
+        self.credentials = self._initialize_credentials()
         self.analytics = self._initialize_analytics()
         # load and validate reports
         self.dimensions_ref, self.metrics_ref = self._fetch_valid_api_metadata()
