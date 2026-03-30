@@ -189,7 +189,7 @@ class TapGoogleAnalytics(Tap):
                 return ProxyOAuthCredentials(
                     token=oauth_credentials.get("access_token"),
                     refresh_token=oauth_credentials.get("refresh_token"),
-                    refresh_proxy_url=oauth_credentials.get("refresh_proxy_url"),
+                    refresh_proxy_url=oauth_credentials["refresh_proxy_url"],
                     refresh_proxy_url_auth=oauth_credentials.get("refresh_proxy_url_auth"),
                 )
 
