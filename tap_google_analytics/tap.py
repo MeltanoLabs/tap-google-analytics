@@ -73,7 +73,13 @@ class ProxyOAuthCredentials(OAuthCredentials):
 
             data: dict = json.loads(response.data)
             access_token = data["access_token"]
+<<<<<<< HEAD
             expiry = datetime.now() + timedelta(seconds=data["expires_in"])
+=======
+            expiry = (datetime.now(timezone.utc) + timedelta(seconds=data["expires_in"])).replace(
+                tzinfo=None
+            )
+>>>>>>> c754dbfd3945a13714778ab16ba3618adab17eed
 
             return access_token, expiry
 
