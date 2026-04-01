@@ -5,10 +5,14 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from datetime import datetime, timedelta
+from http import HTTPStatus
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import GetMetadataRequest
+from google.auth import exceptions
 
 # OAuth - Google Analytics Authorization
 # from google.oauth2.credentials import Credentials as ServiceAccountCredentials  # noqa: ERA001
@@ -21,9 +25,59 @@ from singer_sdk import typing as th  # JSON schema typing helpers
 
 from tap_google_analytics.client import GoogleAnalyticsStream
 
+if TYPE_CHECKING:
+    from google.auth.transport import Request, Response
+
 SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
 
 LOGGER = logging.getLogger(__name__)
+
+
+class ProxyOAuthCredentials(OAuthCredentials):
+    """OAuth credentials that refresh access tokens through a proxy endpoint."""
+
+    def __init__(
+        self,
+        token: str | None,
+        refresh_token: str | None,
+        refresh_proxy_url: str | None,
+        refresh_proxy_url_auth: str | None,
+    ):
+        """Initialize credentials that delegate token refresh to a proxy service."""
+
+        def refresh_handler(request: Request, scopes):  # noqa: ARG001
+            if not refresh_proxy_url or not refresh_token:
+                msg = (
+                    "Insufficient config for proxy token refresh - "
+                    "'refresh_proxy_url' and 'refresh_token' required"
+                )
+                raise ValueError(msg)
+
+            response: Response = request(
+                refresh_proxy_url,
+                method="POST",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": refresh_proxy_url_auth,
+                },
+                body=json.dumps(
+                    {
+                        "grant_type": "refresh_token",
+                        "refresh_token": refresh_token,
+                    }
+                ),
+            )
+
+            if response.status != HTTPStatus.OK:
+                raise exceptions.RefreshError(response.data)
+
+            data: dict = json.loads(response.data)
+            access_token = data["access_token"]
+            expiry = datetime.now() + timedelta(seconds=data["expires_in"])  # noqa: DTZ005
+
+            return access_token, expiry
+
+        super().__init__(token, refresh_handler=refresh_handler)
 
 
 class TapGoogleAnalytics(Tap):
@@ -74,6 +128,21 @@ class TapGoogleAnalytics(Tap):
                     th.StringType,
                     description="Google Analytics Client Secret",
                 ),
+                th.Property(
+                    "access_token",
+                    th.StringType,
+                    description="Google Analytics Access Token",
+                ),
+                th.Property(
+                    "refresh_proxy_url",
+                    th.StringType,
+                    description="Proxy endpoint used to refresh Google Analytics tokens",
+                ),
+                th.Property(
+                    "refresh_proxy_url_auth",
+                    th.StringType,
+                    description="Authorization header value for the refresh proxy endpoint",
+                ),
             ),
             description="Google Analytics OAuth Credentials",
         ),
@@ -114,12 +183,21 @@ class TapGoogleAnalytics(Tap):
     ).to_dict()
 
     def _initialize_credentials(self):
-        if self.config.get("oauth_credentials"):
+        oauth_credentials: dict | None = self.config.get("oauth_credentials")
+        if oauth_credentials:
+            if oauth_credentials.get("refresh_proxy_url"):
+                return ProxyOAuthCredentials(
+                    token=oauth_credentials.get("access_token"),
+                    refresh_token=oauth_credentials.get("refresh_token"),
+                    refresh_proxy_url=oauth_credentials["refresh_proxy_url"],
+                    refresh_proxy_url_auth=oauth_credentials.get("refresh_proxy_url_auth"),
+                )
+
             return OAuthCredentials.from_authorized_user_info(
                 {
-                    "client_id": self.config["oauth_credentials"]["client_id"],
-                    "client_secret": self.config["oauth_credentials"]["client_secret"],
-                    "refresh_token": self.config["oauth_credentials"]["refresh_token"],
+                    "client_id": oauth_credentials["client_id"],
+                    "client_secret": oauth_credentials["client_secret"],
+                    "refresh_token": oauth_credentials["refresh_token"],
                 }
             )
 
