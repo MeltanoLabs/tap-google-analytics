@@ -207,6 +207,38 @@ class GoogleAnalyticsStream(Stream):
         total_rows = response.row_count
         return next_token if total_rows >= next_token * self.page_size else None
 
+    def _parse_dimension_value(self, header: str, raw_dimension: t.Any) -> t.Any:
+        data_type = self._lookup_data_type(
+            "dimension", header, self.dimensions_ref, self.metrics_ref
+        )
+
+        # Keep deviceModel in the primary key, but coerce missing values
+        # to the GA-style placeholder so Postgres does not reject nulls.
+        normalized_dimension = (
+            "(not set)"
+            if header == "deviceModel" and raw_dimension in ("", None)
+            else raw_dimension
+        )
+
+        if data_type == "integer":
+            return int(normalized_dimension)
+        if data_type == "number":
+            return float(normalized_dimension)
+        return normalized_dimension
+
+    def _parse_metric_value(self, metric_name: str, raw_value: t.Any) -> t.Any:
+        metric_type = self._lookup_data_type(
+            "metric", metric_name, self.dimensions_ref, self.metrics_ref
+        )
+
+        normalized_value = raw_value.value if hasattr(raw_value, "value") else raw_value
+
+        if metric_type == "integer":
+            return int(normalized_value)
+        if metric_type == "number":
+            return float(normalized_value)
+        return normalized_value
+
     def _parse_response(self, response):
         if not response:
             return
@@ -218,39 +250,11 @@ class GoogleAnalyticsStream(Stream):
             dimensions = [d.value for d in row.dimension_values]
             dateRangeValues = row.metric_values  # noqa: N806
 
-            for header, dimension in zip(dimensionHeaders, dimensions):
-                data_type = self._lookup_data_type(
-                    "dimension", header, self.dimensions_ref, self.metrics_ref
-                )
+            for header, raw_dimension in zip(dimensionHeaders, dimensions):
+                record[header] = self._parse_dimension_value(header, raw_dimension)
 
-                # Keep deviceModel in the primary key, but coerce missing values
-                # to the GA-style placeholder so Postgres does not reject nulls.
-                if header == "deviceModel" and dimension in ("", None):
-                    dimension = "(not set)"
-
-                if data_type == "integer":
-                    value = int(dimension)
-                elif data_type == "number":
-                    value = float(dimension)
-                else:
-                    value = dimension
-
-                record[header] = value
-
-            for metric_name, value in zip(metricHeaders, dateRangeValues):
-                metric_type = self._lookup_data_type(
-                    "metric", metric_name, self.dimensions_ref, self.metrics_ref
-                )
-
-                if hasattr(value, "value"):
-                    value = value.value  # noqa: PLW2901
-
-                if metric_type == "integer":
-                    value = int(value)  # noqa: PLW2901
-                elif metric_type == "number":
-                    value = float(value)  # noqa: PLW2901
-
-                record[metric_name] = value
+            for metric_name, raw_value in zip(metricHeaders, dateRangeValues):
+                record[metric_name] = self._parse_metric_value(metric_name, raw_value)
 
             # Also add the [start_date,end_date) used for the report
             record["report_start_date"] = self.config.get("start_date")
