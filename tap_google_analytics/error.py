@@ -96,6 +96,7 @@ def is_fatal_error(error):
     LOGGER.critical("Received fatal error %s, reason=%s, status=%s", error, reason, status)
     return True
 
+
 def backoff_handler(details: backoff.types.Details):
     """Common backoff exception handler."""
     if not isinstance(exc := details["exception"], Unauthorized):
