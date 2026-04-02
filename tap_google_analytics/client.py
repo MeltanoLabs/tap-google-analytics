@@ -215,7 +215,7 @@ class GoogleAnalyticsStream(Stream):
 
         # Dimensions participate in stream keys, so coerce missing values
         # to the GA-style placeholder so database loaders do not reject nulls.
-        value = raw_value if raw_value else "(not set)"
+        value = raw_value or "(not set)"
 
         if data_type == "integer":
             return int(value)
