@@ -6,6 +6,7 @@ import contextlib
 import json
 import logging
 import socket
+import sys
 from typing import TYPE_CHECKING
 
 from google.api_core.exceptions import Unauthorized
@@ -99,7 +100,9 @@ def is_fatal_error(error):
 
 def backoff_handler(details: backoff.types.Details):
     """Common backoff exception handler."""
-    if not isinstance(exc := details["exception"], Unauthorized):
+    exc = sys.exc_info()[1]
+
+    if not isinstance(exc, Unauthorized):
         return
 
     # abort after initial unauthorized error
