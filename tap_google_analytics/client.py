@@ -223,6 +223,11 @@ class GoogleAnalyticsStream(Stream):
                     "dimension", header, self.dimensions_ref, self.metrics_ref
                 )
 
+                # Keep deviceModel in the primary key, but coerce missing values
+                # to the GA-style placeholder so Postgres does not reject nulls.
+                if header == "deviceModel" and dimension in ("", None):
+                    dimension = "(not set)"
+
                 if data_type == "integer":
                     value = int(dimension)
                 elif data_type == "number":
