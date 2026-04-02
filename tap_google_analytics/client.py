@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import copy
-import datetime
 import functools
 import sys
 import typing as t
-from datetime import date, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import backoff
 from google.analytics.data_v1beta.types import (
@@ -46,16 +45,12 @@ class GoogleAnalyticsStream(Stream):
         self.property_id = self.config["property_id"]
         self.page_size = 100000
 
-    @staticmethod
-    def _parse_iso_timestamp(input_ts: str) -> datetime.datetime:
-        return datetime.datetime.fromisoformat(input_ts.replace("Z", "+00:00"))
-
     def _get_end_date(self):
         end_date_config = self.config.get("end_date")
         end_date = (
-            self._parse_iso_timestamp(end_date_config)
+            datetime.fromisoformat(end_date_config).date()
             if end_date_config
-            else datetime.datetime.now(timezone.utc)
+            else datetime.now(timezone.utc).date()
         )
         end_date_offset = end_date - timedelta(days=1)
 
@@ -149,7 +144,7 @@ class GoogleAnalyticsStream(Stream):
     def _get_state_filter(self, context: Context | None) -> str:
         state = self.get_context_state(context)
         state_bookmark = state.get("replication_key_value") or self.config["start_date"]
-        parsed = self._parse_iso_timestamp(state_bookmark).date()
+        parsed = datetime.fromisoformat(state_bookmark).date()
         parsed = max(parsed, date(2019, 1, 1))
 
         # state bookmarks need to be reformatted for API requests

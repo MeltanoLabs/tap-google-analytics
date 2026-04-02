@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import datetime
 import os
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from singer_sdk.testing import get_standard_tap_tests
@@ -13,19 +13,15 @@ from tests.utilities import get_secrets_dict
 
 SAMPLE_CONFIG_SERVICE = {
     "property_id": "312647579",
-    "end_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
-    "start_date": (
-        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
-    ).isoformat(),
+    "end_date": datetime.now(timezone.utc).isoformat(),
+    "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
     "key_file_location": f"{os.path.dirname(__file__)}/test_data/client_secrets.json",  # noqa: PTH120
 }
 
 SAMPLE_CONFIG_CLIENT_SECRETS = {
     "property_id": "312647579",
-    "end_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
-    "start_date": (
-        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
-    ).isoformat(),
+    "end_date": datetime.now(timezone.utc).isoformat(),
+    "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
     "client_secrets": get_secrets_dict(),
 }
 
@@ -49,9 +45,7 @@ def test_no_credentials():
     """Run standard tap tests from the SDK."""
     SAMPLE_CONFIG_SERVICE2 = {  # noqa: N806
         "property_id": "312647579",
-        "start_date": (
-            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
-        ).isoformat(),
+        "start_date": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
     }
     with pytest.raises(Exception) as e:  # noqa: PT012, PT011
         tap = TapGoogleAnalytics(config=SAMPLE_CONFIG_SERVICE2)
