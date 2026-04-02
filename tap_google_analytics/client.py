@@ -212,15 +212,11 @@ class GoogleAnalyticsStream(Stream):
             "dimension", dimension_name, self.dimensions_ref, self.metrics_ref
         )
 
-        # Dimensions participate in stream keys, so coerce missing values
-        # to the GA-style placeholder so database loaders do not reject nulls.
-        value = raw_value or "(not set)"
-
         if data_type == "integer":
-            return int(value)
+            return int(raw_value) if raw_value else 0
         if data_type == "number":
-            return float(value)
-        return value
+            return float(raw_value) if raw_value else 0.0
+        return raw_value or "(not set)"
 
     def _parse_metric_value(self, metric_name: str, raw_value: t.Any) -> t.Any:
         metric_type = self._lookup_data_type(
