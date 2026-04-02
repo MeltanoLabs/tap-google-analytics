@@ -6,6 +6,14 @@ import contextlib
 import json
 import logging
 import socket
+from typing import TYPE_CHECKING
+
+from google.api_core.exceptions import Unauthorized
+
+if TYPE_CHECKING:
+    import backoff.types
+
+    from tap_google_analytics.tap import TapGoogleAnalytics
 
 
 class TapGaApiError(Exception):
@@ -76,7 +84,7 @@ def is_fatal_error(error):
         return False
 
     status = error.code if error.message is not None else None
-    if status in [500, 503]:
+    if status in [401, 500, 503]:
         return False
 
     # Use list of errors defined in:
@@ -87,3 +95,18 @@ def is_fatal_error(error):
 
     LOGGER.critical("Received fatal error %s, reason=%s, status=%s", error, reason, status)
     return True
+
+def backoff_handler(details: backoff.types.Details):
+    """Common backoff exception handler."""
+    if not isinstance(exc := details["exception"], Unauthorized):
+        return
+
+    # abort after initial unauthorized error
+    if details["tries"] > 1:
+        raise exc
+
+    tap: TapGoogleAnalytics = details["args"][0]
+
+    # no expiry implies token was provided via config, and we should attempt a refresh
+    if not tap.credentials.expiry:
+        tap.credentials.token = None

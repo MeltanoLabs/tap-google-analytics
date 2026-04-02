@@ -18,7 +18,7 @@ from google.analytics.data_v1beta.types import (
 from singer_sdk import typing as th
 from singer_sdk.streams import Stream
 
-from tap_google_analytics.error import is_fatal_error
+from tap_google_analytics.error import backoff_handler, is_fatal_error
 
 if t.TYPE_CHECKING:
     from singer_sdk.helpers.types import Context
@@ -254,7 +254,13 @@ class GoogleAnalyticsStream(Stream):
 
             yield record
 
-    @backoff.on_exception(backoff.expo, (Exception), max_tries=5, giveup=is_fatal_error)
+    @backoff.on_exception(
+        backoff.expo,
+        (Exception),
+        max_tries=5,
+        on_backoff=backoff_handler,
+        giveup=is_fatal_error,
+    )
     def _query_api(self, report_definition, state_filter, pageToken=None) -> RunReportResponse:  # noqa: N803
         """Query the Analytics Reporting API V4.
 

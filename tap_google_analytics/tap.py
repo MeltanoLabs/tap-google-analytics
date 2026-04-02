@@ -10,6 +10,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import backoff
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import GetMetadataRequest
 from google.auth import exceptions
@@ -24,6 +25,7 @@ from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 
 from tap_google_analytics.client import GoogleAnalyticsStream
+from tap_google_analytics.error import backoff_handler, is_fatal_error
 
 if TYPE_CHECKING:
     from google.auth.transport import Request, Response
@@ -241,6 +243,13 @@ class TapGoogleAnalytics(Tap):
             self.logger.critical("'%s' file not found", report_def_file)
             sys.exit(1)
 
+    @backoff.on_exception(
+        backoff.expo,
+        (Exception),
+        max_tries=5,
+        on_backoff=backoff_handler,
+        giveup=is_fatal_error,
+    )
     def _fetch_valid_api_metadata(self) -> tuple[dict, dict]:
         """Fetch the valid (dimensions, metrics) for the Analytics Reporting API.
 
