@@ -143,7 +143,8 @@ class GoogleAnalyticsStream(Stream):
 
     def _get_state_filter(self, context: Context | None) -> str:
         state = self.get_context_state(context)
-        state_bookmark = state.get("replication_key_value") or self.config["start_date"]
+        state_bookmark = state.get(
+            "replication_key_value") or self.config["start_date"]
         parsed = datetime.fromisoformat(state_bookmark).date()
         parsed = max(parsed, date(2019, 1, 1))
 
@@ -207,37 +208,41 @@ class GoogleAnalyticsStream(Stream):
         total_rows = response.row_count
         return next_token if total_rows >= next_token * self.page_size else None
 
-    def _parse_dimension_value(self, header: str, raw_dimension: t.Any) -> t.Any:
+    def _parse_dimension_value(self, dimension_name: str, raw_value: t.Any) -> t.Any:
         data_type = self._lookup_data_type(
-            "dimension", header, self.dimensions_ref, self.metrics_ref
+            "dimension", dimension_name, self.dimensions_ref, self.metrics_ref
         )
 
-        # Keep deviceModel in the primary key, but coerce missing values
-        # to the GA-style placeholder so Postgres does not reject nulls.
-        normalized_dimension = (
+        # Dimensions participate in stream keys, so coerce missing values
+        # to the GA-style placeholder so database loaders do not reject nulls.
+        value = (
             "(not set)"
-            if header == "deviceModel" and raw_dimension in ("", None)
-            else raw_dimension
+            if not raw_value
+            else raw_value
         )
 
         if data_type == "integer":
-            return int(normalized_dimension)
+            return int(value)
         if data_type == "number":
-            return float(normalized_dimension)
-        return normalized_dimension
+            return float(value)
+        return value
 
     def _parse_metric_value(self, metric_name: str, raw_value: t.Any) -> t.Any:
         metric_type = self._lookup_data_type(
-            "metric", metric_name, self.dimensions_ref, self.metrics_ref
+            "metric",
+            metric_name,
+            self.dimensions_ref,
+            self.metrics_ref
         )
 
-        normalized_value = raw_value.value if hasattr(raw_value, "value") else raw_value
+        value = raw_value.value if hasattr(
+            raw_value, "value") else raw_value
 
         if metric_type == "integer":
-            return int(normalized_value)
+            return int(value)
         if metric_type == "number":
-            return float(normalized_value)
-        return normalized_value
+            return float(value)
+        return value
 
     def _parse_response(self, response):
         if not response:
@@ -251,10 +256,12 @@ class GoogleAnalyticsStream(Stream):
             dateRangeValues = row.metric_values  # noqa: N806
 
             for header, raw_dimension in zip(dimensionHeaders, dimensions):
-                record[header] = self._parse_dimension_value(header, raw_dimension)
+                record[header] = self._parse_dimension_value(
+                    header, raw_dimension)
 
             for metric_name, raw_value in zip(metricHeaders, dateRangeValues):
-                record[metric_name] = self._parse_metric_value(metric_name, raw_value)
+                record[metric_name] = self._parse_metric_value(
+                    metric_name, raw_value)
 
             # Also add the [start_date,end_date) used for the report
             record["report_start_date"] = self.config.get("start_date")
@@ -273,7 +280,8 @@ class GoogleAnalyticsStream(Stream):
             property=f"properties/{self.property_id}",
             dimensions=report_definition["dimensions"],
             metrics=report_definition["metrics"],
-            date_ranges=[DateRange(start_date=state_filter, end_date=self.end_date)],
+            date_ranges=[
+                DateRange(start_date=state_filter, end_date=self.end_date)],
             limit=self.page_size,
             metric_filter=report_definition["metricFilter"],
             dimension_filter=report_definition["dimensionFilter"],
@@ -327,7 +335,8 @@ class GoogleAnalyticsStream(Stream):
             data_type = self._lookup_data_type(
                 "dimension", dimension, self.dimensions_ref, self.metrics_ref
             )
-            properties.append(th.Property(dimension, self._get_datatype(data_type), required=True))
+            properties.append(th.Property(
+                dimension, self._get_datatype(data_type), required=True))
             primary_keys.append(dimension)
 
         # Add the metrics to the schema
@@ -335,11 +344,13 @@ class GoogleAnalyticsStream(Stream):
             data_type = self._lookup_data_type(
                 "metric", metric, self.dimensions_ref, self.metrics_ref
             )
-            properties.append(th.Property(metric, self._get_datatype(data_type)))
+            properties.append(th.Property(
+                metric, self._get_datatype(data_type)))
 
         properties.extend(
             (
-                th.Property("report_start_date", th.StringType(), required=True),
+                th.Property("report_start_date",
+                            th.StringType(), required=True),
                 th.Property("report_end_date", th.StringType(), required=True),
             )
         )
