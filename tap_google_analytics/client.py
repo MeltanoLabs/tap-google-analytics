@@ -207,6 +207,30 @@ class GoogleAnalyticsStream(Stream):
         total_rows = response.row_count
         return next_token if total_rows >= next_token * self.page_size else None
 
+    def _parse_dimension_value(self, dimension_name: str, raw_value: t.Any) -> t.Any:
+        data_type = self._lookup_data_type(
+            "dimension", dimension_name, self.dimensions_ref, self.metrics_ref
+        )
+
+        if data_type == "integer":
+            return int(raw_value) if raw_value else 0
+        if data_type == "number":
+            return float(raw_value) if raw_value else 0.0
+        return raw_value or "(not set)"
+
+    def _parse_metric_value(self, metric_name: str, raw_value: t.Any) -> t.Any:
+        metric_type = self._lookup_data_type(
+            "metric", metric_name, self.dimensions_ref, self.metrics_ref
+        )
+
+        value = raw_value.value if hasattr(raw_value, "value") else raw_value
+
+        if metric_type == "integer":
+            return int(value)
+        if metric_type == "number":
+            return float(value)
+        return value
+
     def _parse_response(self, response):
         if not response:
             return
@@ -218,34 +242,11 @@ class GoogleAnalyticsStream(Stream):
             dimensions = [d.value for d in row.dimension_values]
             dateRangeValues = row.metric_values  # noqa: N806
 
-            for header, dimension in zip(dimensionHeaders, dimensions):
-                data_type = self._lookup_data_type(
-                    "dimension", header, self.dimensions_ref, self.metrics_ref
-                )
+            for header, raw_dimension in zip(dimensionHeaders, dimensions):
+                record[header] = self._parse_dimension_value(header, raw_dimension)
 
-                if data_type == "integer":
-                    value = int(dimension)
-                elif data_type == "number":
-                    value = float(dimension)
-                else:
-                    value = dimension
-
-                record[header] = value
-
-            for metric_name, value in zip(metricHeaders, dateRangeValues):
-                metric_type = self._lookup_data_type(
-                    "metric", metric_name, self.dimensions_ref, self.metrics_ref
-                )
-
-                if hasattr(value, "value"):
-                    value = value.value  # noqa: PLW2901
-
-                if metric_type == "integer":
-                    value = int(value)  # noqa: PLW2901
-                elif metric_type == "number":
-                    value = float(value)  # noqa: PLW2901
-
-                record[metric_name] = value
+            for metric_name, raw_value in zip(metricHeaders, dateRangeValues):
+                record[metric_name] = self._parse_metric_value(metric_name, raw_value)
 
             # Also add the [start_date,end_date) used for the report
             record["report_start_date"] = self.config.get("start_date")
