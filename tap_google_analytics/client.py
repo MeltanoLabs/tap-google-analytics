@@ -48,9 +48,9 @@ class GoogleAnalyticsStream(Stream):
     def _get_end_date(self):
         end_date_config = self.config.get("end_date")
         end_date = (
-            datetime.strptime(end_date_config, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            datetime.fromisoformat(end_date_config).date()
             if end_date_config
-            else datetime.now(timezone.utc)
+            else datetime.now(timezone.utc).date()
         )
         end_date_offset = end_date - timedelta(days=1)
 
@@ -144,7 +144,7 @@ class GoogleAnalyticsStream(Stream):
     def _get_state_filter(self, context: Context | None) -> str:
         state = self.get_context_state(context)
         state_bookmark = state.get("replication_key_value") or self.config["start_date"]
-        parsed = date.fromisoformat(state_bookmark)
+        parsed = datetime.fromisoformat(state_bookmark).date()
         parsed = max(parsed, date(2019, 1, 1))
 
         # state bookmarks need to be reformatted for API requests
