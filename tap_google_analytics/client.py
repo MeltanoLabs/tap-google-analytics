@@ -177,7 +177,7 @@ class GoogleAnalyticsStream(Stream):
                 next_page_token=next_page_token,
             )
 
-            yield from self._parse_response(resp)
+            yield from self._parse_response(resp, start_date=state_filter)
 
             previous_token = copy.deepcopy(next_page_token)
             next_page_token = self._get_next_page_token(
@@ -231,7 +231,7 @@ class GoogleAnalyticsStream(Stream):
             return float(value)
         return value
 
-    def _parse_response(self, response):
+    def _parse_response(self, response, start_date: str | None = None):
         if not response:
             return
         dimensionHeaders = [d.name for d in response.dimension_headers]  # noqa: N806
@@ -249,7 +249,7 @@ class GoogleAnalyticsStream(Stream):
                 record[metric_name] = self._parse_metric_value(metric_name, raw_value)
 
             # Also add the [start_date,end_date) used for the report
-            record["report_start_date"] = self.config.get("start_date")
+            record["report_start_date"] = start_date
             record["report_end_date"] = self.end_date
 
             yield record
