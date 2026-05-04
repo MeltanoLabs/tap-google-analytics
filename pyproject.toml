@@ -16,26 +16,19 @@ keywords = [
   "GoogleAnalytics",
 ]
 license = "Apache-2.0"
-
-[tool.poetry.dependencies]
-python = ">=3.9"
-backports-datetime-fromisoformat = { version = "~=2.0.1", python = "<3.11" }
-singer-sdk = "~=0.44.0"
-google-analytics-data = "~=0.18.8"
-
-[tool.poetry.group.dev.dependencies]
-pytest = ">=7.2.1"
-coverage = ">=7.1"
-mypy = ">=1.8"
-ruff = ">=0.2.1"
-
-[tool.poetry.scripts]
+dependencies.python = ">=3.9"
+dependencies.backports-datetime-fromisoformat = { version = "~=2.0.1", python = "<3.11" }
+dependencies.singer-sdk = "~=0.44.0"
+dependencies.google-analytics-data = "~=0.18.8"
+group.dev.dependencies.pytest = ">=7.2.1"
+group.dev.dependencies.coverage = ">=7.1"
+group.dev.dependencies.mypy = ">=1.8"
+group.dev.dependencies.ruff = ">=0.2.1"
 # CLI declaration
-tap-google-analytics = 'tap_google_analytics.tap:TapGoogleAnalytics.cli'
+scripts.tap-google-analytics = "tap_google_analytics.tap:TapGoogleAnalytics.cli"
 
 [tool.ruff]
 target-version = "py39"
-
 line-length = 100
 lint.select = [
   "A",    # flake8-builtins
