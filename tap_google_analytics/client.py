@@ -29,6 +29,37 @@ if sys.version_info < (3, 11):
     MonkeyPatch.patch_fromisoformat()
 
 
+def get_request_start_date(
+    state_bookmark: str | None,
+    start_date: str,
+    lookback_days: int = 0,
+) -> str:
+    """Get the first date to request from the API, as YYYY-MM-DD.
+
+    When resuming from a state bookmark, the request starts `lookback_days` before
+    the bookmark so that recent days are read again after GA4 has finished
+    processing them, but never before `start_date`.
+
+    Args:
+        state_bookmark: The replication key value from state, if any.
+        start_date: The `start_date` setting.
+        lookback_days: How many days before the bookmark to start the request.
+
+    Returns:
+        The request start date.
+    """
+    parsed = datetime.fromisoformat(start_date).date()
+
+    if state_bookmark:
+        bookmark = datetime.fromisoformat(state_bookmark).date()
+        parsed = max(bookmark - timedelta(days=lookback_days), parsed)
+
+    parsed = max(parsed, date(2019, 1, 1))
+
+    # state bookmarks need to be reformatted for API requests
+    return date.strftime(parsed, "%Y-%m-%d")
+
+
 class GoogleAnalyticsStream(Stream):
     """Stream class for GoogleAnalytics streams."""
 
@@ -143,12 +174,11 @@ class GoogleAnalyticsStream(Stream):
 
     def _get_state_filter(self, context: Context | None) -> str:
         state = self.get_context_state(context)
-        state_bookmark = state.get("replication_key_value") or self.config["start_date"]
-        parsed = datetime.fromisoformat(state_bookmark).date()
-        parsed = max(parsed, date(2019, 1, 1))
-
-        # state bookmarks need to be reformatted for API requests
-        return date.strftime(parsed, "%Y-%m-%d")
+        return get_request_start_date(
+            state_bookmark=state.get("replication_key_value"),
+            start_date=self.config["start_date"],
+            lookback_days=self.config.get("lookback_days") or 0,
+        )
 
     def _request_records(self, context: Context | None) -> t.Iterable[dict]:
         """Request records from REST endpoint(s), returning response records.

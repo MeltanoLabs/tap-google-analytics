@@ -182,6 +182,15 @@ class TapGoogleAnalytics(Tap):
             th.StringType,
             description="The last record date to sync",
         ),
+        th.Property(
+            "lookback_days",
+            th.IntegerType,
+            default=0,
+            description=(
+                "Number of days before the state bookmark to re-read on each incremental "
+                "sync, so that days GA4 had not finished processing are read again"
+            ),
+        ),
     ).to_dict()
 
     def _initialize_credentials(self):

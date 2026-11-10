@@ -25,6 +25,7 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 | reports             | False    | None    | A path to a file containing the Google Analytics reports definitions |
 | reports_list        | False    | None    | List of Google Analytics Reports Definitions |
 | end_date            | False    | None    | The last record date to sync |
+| lookback_days       | False    | 0       | Number of days before the state bookmark to re-read on each incremental sync, so that days GA4 had not finished processing are read again |
 | stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
 | stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
 | flattening_enabled  | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
@@ -145,6 +146,8 @@ When no report definitions are provided by the user, `tap-google-analytics` gene
 - **transactions**: Most common metrics per day, transactions, revenue per user, purchase revenue, and total revenue.
 
 This tap only allows incremental syncs using STATE records if the `date` dimension is included in the report. Otherwise it does not save state and does a full load each time. Without the `date` dimension this can be mitigated by allowing for chunked runs using [start_date, end_date).
+
+GA4 can take 24–48 hours to finish processing a day. An incremental sync resumes from the last `date` in state, so each day is otherwise read only by the next one or two syncs, and a day read before processing finishes stays incomplete. Set `lookback_days` (for example `3`) to start each incremental sync that many days before the state bookmark, so recent days are read again. Re-read rows replace the earlier ones in targets that upsert on the primary key, because every dimension is part of the key. The lookback never starts before `start_date`.
 
 If not provided and the tap runs without a `--catalog` also provided, use [tap_google_analytics/defaults/default_report_definition.json](tap_google_analytics/defaults/default_report_definition.json) as the default definition.
 
