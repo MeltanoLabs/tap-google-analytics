@@ -6,7 +6,7 @@ import copy
 import functools
 import sys
 import typing as t
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import backoff
 from google.analytics.data_v1beta.types import (
@@ -22,11 +22,6 @@ from tap_google_analytics.error import backoff_handler, is_fatal_error
 
 if t.TYPE_CHECKING:
     from singer_sdk.helpers.types import Context
-
-if sys.version_info < (3, 11):
-    from backports.datetime_fromisoformat import MonkeyPatch
-
-    MonkeyPatch.patch_fromisoformat()
 
 
 class GoogleAnalyticsStream(Stream):
@@ -50,7 +45,7 @@ class GoogleAnalyticsStream(Stream):
         end_date = (
             datetime.fromisoformat(end_date_config).date()
             if end_date_config
-            else datetime.now(timezone.utc).date()
+            else datetime.now(UTC).date()
         )
         end_date_offset = end_date - timedelta(days=1)
 
@@ -242,10 +237,10 @@ class GoogleAnalyticsStream(Stream):
             dimensions = [d.value for d in row.dimension_values]
             dateRangeValues = row.metric_values  # noqa: N806
 
-            for header, raw_dimension in zip(dimensionHeaders, dimensions):
+            for header, raw_dimension in zip(dimensionHeaders, dimensions, strict=False):
                 record[header] = self._parse_dimension_value(header, raw_dimension)
 
-            for metric_name, raw_value in zip(metricHeaders, dateRangeValues):
+            for metric_name, raw_value in zip(metricHeaders, dateRangeValues, strict=False):
                 record[metric_name] = self._parse_metric_value(metric_name, raw_value)
 
             # Also add the [start_date,end_date) used for the report
