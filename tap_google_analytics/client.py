@@ -242,10 +242,10 @@ class GoogleAnalyticsStream(Stream):
             dimensions = [d.value for d in row.dimension_values]
             dateRangeValues = row.metric_values  # noqa: N806
 
-            for header, raw_dimension in zip(dimensionHeaders, dimensions):
+            for header, raw_dimension in zip(dimensionHeaders, dimensions, strict=False):
                 record[header] = self._parse_dimension_value(header, raw_dimension)
 
-            for metric_name, raw_value in zip(metricHeaders, dateRangeValues):
+            for metric_name, raw_value in zip(metricHeaders, dateRangeValues, strict=False):
                 record[metric_name] = self._parse_metric_value(metric_name, raw_value)
 
             # Also add the [start_date,end_date) used for the report
