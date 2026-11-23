@@ -28,22 +28,24 @@ if sys.version_info < (3, 11):
 
     MonkeyPatch.patch_fromisoformat()
 
+# GA4 can update a day for up to 2 calendar days after it, plus today, and drops
+# events that arrive later.
+REREAD_DAYS = 3
+
 
 def get_request_start_date(
     state_bookmark: str | None,
     start_date: str,
-    lookback_days: int = 0,
 ) -> str:
     """Get the first date to request from the API, as YYYY-MM-DD.
 
-    When resuming from a state bookmark, the request starts `lookback_days` before
+    When resuming from a state bookmark, the request starts `REREAD_DAYS` before
     the bookmark so that recent days are read again after GA4 has finished
     processing them, but never before `start_date`.
 
     Args:
         state_bookmark: The replication key value from state, if any.
         start_date: The `start_date` setting.
-        lookback_days: How many days before the bookmark to start the request.
 
     Returns:
         The request start date.
@@ -52,7 +54,7 @@ def get_request_start_date(
 
     if state_bookmark:
         bookmark = datetime.fromisoformat(state_bookmark).date()
-        parsed = max(bookmark - timedelta(days=lookback_days), parsed)
+        parsed = max(bookmark - timedelta(days=REREAD_DAYS), parsed)
 
     parsed = max(parsed, date(2019, 1, 1))
 
@@ -177,7 +179,6 @@ class GoogleAnalyticsStream(Stream):
         return get_request_start_date(
             state_bookmark=state.get("replication_key_value"),
             start_date=self.config["start_date"],
-            lookback_days=self.config.get("lookback_days") or 0,
         )
 
     def _request_records(self, context: Context | None) -> t.Iterable[dict]:
