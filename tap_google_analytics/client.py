@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import copy
-import functools
 import sys
 import typing as t
 from datetime import date, datetime, timedelta, timezone
+from functools import cached_property
 
 import backoff
 from google.analytics.data_v1beta.types import (
@@ -20,8 +20,10 @@ from singer_sdk.streams import Stream
 
 from tap_google_analytics.error import backoff_handler, is_fatal_error
 
-if t.TYPE_CHECKING:
-    from singer_sdk.helpers.types import Context
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 if sys.version_info < (3, 11):
     from backports.datetime_fromisoformat import MonkeyPatch
@@ -31,35 +33,6 @@ if sys.version_info < (3, 11):
 # GA4 can update a day for up to 2 calendar days after it, plus today, and drops
 # events that arrive later.
 REREAD_DAYS = 3
-
-
-def get_request_start_date(
-    state_bookmark: str | None,
-    start_date: str,
-) -> str:
-    """Get the first date to request from the API, as YYYY-MM-DD.
-
-    When resuming from a state bookmark, the request starts `REREAD_DAYS` before
-    the bookmark so that recent days are read again after GA4 has finished
-    processing them, but never before `start_date`.
-
-    Args:
-        state_bookmark: The replication key value from state, if any.
-        start_date: The `start_date` setting.
-
-    Returns:
-        The request start date.
-    """
-    parsed = datetime.fromisoformat(start_date).date()
-
-    if state_bookmark:
-        bookmark = datetime.fromisoformat(state_bookmark).date()
-        parsed = max(bookmark - timedelta(days=REREAD_DAYS), parsed)
-
-    parsed = max(parsed, date(2019, 1, 1))
-
-    # state bookmarks need to be reformatted for API requests
-    return date.strftime(parsed, "%Y-%m-%d")
 
 
 class GoogleAnalyticsStream(Stream):
@@ -74,11 +47,30 @@ class GoogleAnalyticsStream(Stream):
 
         super().__init__(*args, **kwargs)
 
-        self.end_date = self._get_end_date()
         self.property_id = self.config["property_id"]
         self.page_size = 100000
 
-    def _get_end_date(self):
+    @property
+    def start_date(self) -> str:
+        """The first date to request from the API, in ISO format.
+
+        When resuming from a state bookmark, the request starts `REREAD_DAYS` before
+        the bookmark so that recent days are read again after GA4 has finished
+        processing them, but never before `start_date`.
+        """
+        start_date = datetime.fromisoformat(self.config["start_date"]).date()
+
+        if replication_key_value := self.get_starting_replication_key_value(self.context):
+            bookmark = datetime.fromisoformat(replication_key_value).date()
+            start_date = max(bookmark - timedelta(days=REREAD_DAYS), start_date)
+
+        return max(start_date, date(2019, 1, 1)).isoformat()
+
+    # Cached so that every page and record of a sync uses the same end date, also
+    # when the sync runs past midnight.
+    @cached_property
+    def end_date(self) -> str:
+        """The last date to request from the API, in ISO format."""
         end_date_config = self.config.get("end_date")
         end_date = (
             datetime.fromisoformat(end_date_config).date()
@@ -87,7 +79,7 @@ class GoogleAnalyticsStream(Stream):
         )
         end_date_offset = end_date - timedelta(days=1)
 
-        return end_date_offset.strftime("%Y-%m-%d")
+        return end_date_offset.isoformat()
 
     def _parse_dimension_type(self, attribute, dimensions_ref):
         if attribute in dimensions_ref:
@@ -174,32 +166,12 @@ class GoogleAnalyticsStream(Stream):
     ) -> RunReportResponse:
         return self._query_api(api_report_def, state_filter, next_page_token)
 
-    def _get_state_filter(self, context: Context | None) -> str:
-        state = self.get_context_state(context)
-        return get_request_start_date(
-            state_bookmark=state.get("replication_key_value"),
-            start_date=self.config["start_date"],
-        )
-
-    def _request_records(self, context: Context | None) -> t.Iterable[dict]:
-        """Request records from REST endpoint(s), returning response records.
-
-        If pagination is detected, pages will be recursed automatically.
-
-        Args:
-            context: Stream partition or context dictionary.
-
-        Yields:
-            An item for every record in the response.
-
-        Raises:
-            RuntimeError: If a loop in pagination is detected. That is, when two
-                consecutive pagination tokens are identical.
-        """
+    @override
+    def get_records(self, context):
         next_page_token: t.Any = None
         finished = False
 
-        state_filter = self._get_state_filter(context)
+        state_filter = self.start_date
         api_report_def = self._generate_report_definition(self.report)
         while not finished:
             resp = self._request_data(
@@ -320,21 +292,7 @@ class GoogleAnalyticsStream(Stream):
         }
         return mapping.get(string_type, th.StringType())
 
-    def get_records(self, context: Context | None) -> t.Iterable[dict[str, t.Any]]:
-        """Return a generator of row-type dictionary objects.
-
-        Each row emitted should be a dictionary of property names to their values.
-
-        Args:
-            context: Stream partition or context dictionary.
-
-        Yields:
-            One item per (possibly processed) record in the API.
-
-        """
-        yield from self._request_records(context)
-
-    @functools.cached_property
+    @cached_property
     def schema(self) -> dict:
         """Return dictionary of record schema.
 
